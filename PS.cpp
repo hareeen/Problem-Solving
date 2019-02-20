@@ -89,7 +89,7 @@ int main() {
   }
   while(targ!=0) {
     if(targ%2==1) {
-      res=Mlist[cnt]*res;
+      res=Mlist[cnt]*res
     }
     cnt++;
     targ/=2;
