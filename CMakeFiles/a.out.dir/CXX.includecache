@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/himyu/Desktop/himyu/PS/PS.cpp
+iostream
+-
+fstream
+-
+vector
+-
+queue
+-
+stack
+-
+tuple
+-
+algorithm
+-
+functional
+-
+cmath
+-
+cstdio
+-
+climits
+-
+cstring
+-
+cstdlib
+-
+

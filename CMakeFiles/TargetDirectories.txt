@@ -1,0 +1,3 @@
+/Users/himyu/Desktop/himyu/PS/CMakeFiles/rebuild_cache.dir
+/Users/himyu/Desktop/himyu/PS/CMakeFiles/edit_cache.dir
+/Users/himyu/Desktop/himyu/PS/CMakeFiles/a.out.dir
