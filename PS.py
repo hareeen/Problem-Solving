@@ -1,10 +1,6 @@
-def legal(l):
-    ind0=l.index(0)
-    if ind0==0:
-        return False
-    targ=l[ind0-1]+1
-    if max(l)<targ:
-        return False
-    targ_ind=l.index(targ)
-    l[ind0], l[targ_ind] = l[targ_ind], l[ind0]
-    return l
+for i in range(int(input())):
+  s=[1,2,4]
+  t=int(input())
+  l=lambda x:x if x>0 else 0
+  exec("s.append((s[-1]+s[-2]+s[-3]));"*l(t-3))
+  print(s[t-1])
