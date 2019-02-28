@@ -1,0 +1,44 @@
+// MATRIX CLASS
+
+#define MOD 1000000007
+
+class matrix {
+public:
+  vector<vector<ll> > Matrix;
+  matrix(int N, int M) {
+    Matrix.resize(N, vector<ll>(M));
+  }
+  matrix(vector<vector<ll> > _mat) {
+    Matrix=_mat;
+  }
+  void print() {
+    for(auto i:Matrix) {
+      for(auto j:i) {
+        printf("%lld ", j);
+      }
+      printf("\n");
+    }
+  }
+  matrix operator*(const matrix &rhs);
+  matrix& operator=(const matrix &rhs);
+};
+
+matrix matrix::operator*(const matrix &rhs) {
+  matrix result=matrix(this->Matrix.size(), rhs.Matrix[0].size());
+  for(int i=0; i<this->Matrix.size();i++) {
+    for(int j=0;j<rhs.Matrix[0].size();j++) {
+      for(int k=0;k<rhs.Matrix.size();k++) {
+        result.Matrix[i][j]+=(this->Matrix[i][k] * rhs.Matrix[k][j]);
+        result.Matrix[i][j] %= MOD;
+      }
+    }
+  }
+  return result;
+}
+
+matrix& matrix::operator=(const matrix &rhs) {
+  this->Matrix=rhs.Matrix;
+  return *this;
+}
+
+//
