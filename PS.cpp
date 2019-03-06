@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <functional>
 #include <bitset>
+#include <utility>
+#include <iterator>
 
 #include <cmath>
 #include <cstdio>
@@ -28,30 +30,20 @@ vector<vector<int> > adjaList;
 vector<bool> visited;
 
 // Global Variables
-
+string str;
+vector<int> cnt(5);
 
 // Function
-void DFS(int _v) {
-	cout<<_v+1<<" ";
-	visited[_v]=true;
-	for(auto i:adjaList[_v]) if(!visited[i]) DFS(i);
-	return;
+int geti(char c) {
+	auto s=string("quack");
+	for(int i=0; i<5; i++) if(c==s[i]) return i;
+	return 0;
 }
 
-void BFS(int _v) {
-	visited[_v]=true;
-	queue<int> _que;
-	_que.push(_v);
-	while(!_que.empty()) {
-		for(auto i:adjaList[_que.front()]) {
-			if(!visited[i]) {
-				_que.push(i);
-				visited[i]=true;
-			}
-		}
-		cout<<_que.front()+1<<" ";
-		_que.pop();
-	}
+bool isVaild(vector<int> v) {
+	bool ret=true;
+	for(int i=0; i<v.size()-1; i++) ret&=(v[i]>=v[i+1]);
+	return ret;
 }
 
 // Main
@@ -61,28 +53,17 @@ int main() {
 	cout.tie(NULL);
 
 	// Code Start
-	cin>>N>>M>>V;
-	V--;
-	adjaList.resize(N);
-	for(int i=0; i<M; i++) {
-		int _v1, _v2;
-		cin>>_v1>>_v2;
-		_v1--; _v2--;
-		adjaList[_v1].push_back(_v2);
-		adjaList[_v2].push_back(_v1);
+	cin>>str;
+	int _res=-1;
+	for(auto i:str) {
+		cnt[geti(i)]++;
+		if(!isVaild(cnt)) {
+			cout<< -1<<endl;
+			return 0;
+		}
+		_res=max(_res, *max_element(cnt.begin(), cnt.end())-*min_element(cnt.begin(), cnt.end()));
 	}
-
-	for(int i=0;i<N;i++) sort(adjaList[i].begin(), adjaList[i].end());
-
-	visited.clear();
-	visited.resize(N);
-	DFS(V);
-	cout<<endl;
-
-	visited.clear();
-	visited.resize(N);
-	BFS(V);
-	cout<<endl;
-
+	if(*max_element(cnt.begin(), cnt.end())-*min_element(cnt.begin(), cnt.end())==0) cout<<_res<<endl;
+	else cout<<-1<<endl;
 	return 0;
 }
