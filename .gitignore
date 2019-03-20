@@ -5,3 +5,4 @@ a.jar
 a.out
 CMakeFiles/
 __pycache__/
+Makefile
