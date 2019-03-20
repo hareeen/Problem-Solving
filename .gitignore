@@ -6,3 +6,4 @@ a.out
 CMakeFiles/
 __pycache__/
 Makefile
+.DS_Store
