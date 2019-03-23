@@ -24,17 +24,34 @@ using ti = tuple<int, int, int>;
 using pli = pair<ll, ll>;
 using pti = tuple<ll, ll, ll>;
 
+int N, M;
+vector<int> Ai;
+
+ll get_balloons(int _balloon) {
+	int s=0;
+	for(auto i:Ai) s+=(_balloon%i);
+	return s;
+}
+
 int main() {
 	ios_base::sync_with_stdio(false);
 	cin.tie(NULL);
 	cout.tie(NULL);
 
-	vector<pi> t;
-	t.push_back(pi(1, 2));
-	t.push_back(pi(2, 4));
-	for(auto [f,s]:t) {
-		cout<<f*s<<endl;
+	cin>>N>>M;
+	for(int i=0;i<N;i++) {
+		int t;
+		cin>>t;
+		Ai.push_back(t);
 	}
-	
+
+	ll l=0, r=LLONG_MAX;
+	while(l!=r) {
+		ll mid=(l+r)/2;
+		if(get_balloons(mid)<M) l=mid+1;
+		else r=mid;
+	}
+
+	cout<<l;
 	return 0;
 }
