@@ -44,8 +44,6 @@ int main() {
 		Ai.push_back(t);
 	}
 
-<<<<<<< HEAD
-=======
 	ll l=0, r=LLONG_MAX;
 	while(l!=r) {
 		ll mid=(l+r)/2;
@@ -54,6 +52,5 @@ int main() {
 	}
 
 	cout<<l;
->>>>>>> 3328671f1843b86791bee88c629d3a902b83f50d
 	return 0;
 }
