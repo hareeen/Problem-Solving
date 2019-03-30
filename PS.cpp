@@ -17,7 +17,6 @@
 #include <cstdlib>
 
 using namespace std;
-using uint = unsigned int;
 using ll = long long;
 using pi = pair<int, int>;
 using ti = tuple<int, int, int>;
@@ -35,6 +34,6 @@ int main() {
 	for(auto [f,s]:t) {
 		cout<<f*s<<endl;
 	}
-	
+
 	return 0;
 }
