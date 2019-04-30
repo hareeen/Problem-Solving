@@ -1,8 +1,6 @@
-l=list(map(int, input().split()))
-s=sorted(l)
-if s==l:
-  print("ascending")
-elif s[::-1]==l:
-  print("descending")
-else:
-  print("mixed")
+a = 0
+b = 0
+input()
+for i in input():
+  (a, b) = (min(a, b) + 1, b) if i == 'B' else (a, min(a, b) + 1)
+print(a)
