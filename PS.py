@@ -1,23 +1,18 @@
-N, M, X = map(int, input().split())
-Hl = list(map(int, input().split()))
-res = []
-for i in range(N):
-  res.append(['.'] * M)
-for i in range(M):
-  for j in range(N - Hl[i], N):
-    res[j][i] = '#'
-br_l = []
-for i in range(M):
-  if res[N - X][i] == '.':
-    if i % 3 == 2:
-      br_l.append(i)
-    res[N - X][i] = '-'
-  else:
-    res[N - X][i] = '*'
-for i in br_l:
-  for j in range(N - X + 1, N):
-    if res[j - 1][i] in ('-', '|') and res[j][i] != '#':
-      res[j][i] = '|'
-for i in range(N):
-  res[i] = ''.join(res[i])
-print('\n'.join(res))
+def conseq(n):
+  if len(bin(n)[3:].replace('0', '')) == 0:
+    return None
+  for i in range(2, n):
+    if (2 * n) % i == 0:
+      if i % 2 == 0 and ((2 * n) // i) % 2 == 1:
+        if n // i - i // 2 >= 0:
+          return list(range(n // i - i // 2 + 1, n // i + i // 2 + 1))
+      elif i % 2 == 1:
+        if n // i - i // 2 > 0:
+          return list(range(n // i - i // 2, n // i + i // 2 + 1))
+
+
+for i in range(int(input())):
+  n = int(input())
+  csq = conseq(n)
+  print('IMPOSSIBLE' if not csq else '{} = {}'.format(
+      n, ' + '.join(map(str, csq))))
