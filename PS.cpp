@@ -56,8 +56,7 @@ int main() {
 	for(int i=0; i<M; i++) {
 		int l, r;
 		cin>>l>>r;
-		cout<<tree_prce(tree_min, 1, 0, N-1, l-1, r-1, true)<<" ";
-		cout<<tree_prce(tree_max, 1, 0, N-1, l-1, r-1, false)<<"\n";
+		cout<<tree_prce(tree_min, 1, 0, N-1, l-1, r-1, true)<<"\n";
 	}
 	return 0;
 }
