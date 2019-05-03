@@ -3,9 +3,9 @@
 #include <queue>
 #include <stack>
 #include <tuple>
+#include <string>
 #include <algorithm>
 #include <functional>
-#include <bitset>
 
 #include <cmath>
 #include <cstdio>
@@ -13,27 +13,48 @@
 #include <cstring>
 
 using namespace std;
-using ll = long long;
+using i64 = long long;
 using pi = pair<int, int>;
-using pli = pair<ll, ll>;
+using pli = pair<i64, i64>;
+using ti = tuple<int, int, int>;
+using tli = tuple<i64, i64, i64>;
 
-int N, M;
-int sz;
-vector<int> arr;
-vector<int> tree_min, tree_max;
+int num[10]={6,2,5,5,4,5,6,3,7,6};
 
-int init(vector<int> &_arr, vector<int> &_tree, int node, int start, int end, bool min_max) {
-	if(start==end) return _tree[node]=_arr[start];
-	else if(min_max) return _tree[node]=min(init(_arr, _tree, node*2, start, (start+end)/2, min_max), init(_arr, _tree, node*2+1, (start+end)/2+1, end, min_max));
-	else return _tree[node]=max(init(_arr, _tree, node*2, start, (start+end)/2, min_max), init(_arr, _tree, node*2+1, (start+end)/2+1, end, min_max));
+
+char ItoC(int n) {
+	return static_cast<char>(n+static_cast<int>('0'));
 }
 
-//left, right: 구하는 구간
-int tree_prce(vector<int> &_tree, int node, int start, int end, int left, int right, bool min_max) {
-	if(right<start || end<left) return min_max?INT_MAX:INT_MIN;
-	else if(left<=start && end<=right) return _tree[node];
-	else if(min_max) return min(tree_prce(_tree, node*2, start, (start+end)/2, left, right, min_max), tree_prce(_tree, node*2+1, (start+end)/2+1, end, left, right, min_max));
-	else return max(tree_prce(_tree, node*2, start, (start+end)/2, left, right, min_max), tree_prce(_tree, node*2+1, (start+end)/2+1, end, left, right, min_max));
+// lhs < rhs, isMin=true 면 true 반환, isMin=false면 반대로
+bool compstring(const string& lhs, const string& rhs, bool isMin) {
+	if(lhs.size()!=rhs.size()) return isMin^(lhs.size()>rhs.size());
+	for(int i=0; i<lhs.size(); i++) if(lhs[i]!=rhs[i]) return isMin^(lhs[i]>rhs[i]);
+	return false;
+}
+
+string dynamic(int n, bool isMin) {
+	vector<vector<string> > dp(n+1, vector<string>(10, ""));
+	const string init_str=isMin?"0000000000000000000000000000000000000000000000000000000":"0";
+	for(int i=1; i<=n; i++) {
+		for(int j=0; j<10; j++) {
+			if(i<num[j]) {
+				dp[i][j]=init_str;
+				continue;
+			}
+			bool isVaild=false;
+			dp[i][j]=init_str;
+			for(int k=0; k<10; k++) {
+				//cout<<dp[i-num[j]][k]+ItoC(j)<<" "<<dp[i][j]<<endl;
+				if(dp[i-num[j]][k]=="" && j==0) continue;
+				if(dp[i-num[j]][k]!=init_str && compstring(dp[i-num[j]][k]+ItoC(j), dp[i][j], isMin)) dp[i][j]=dp[i-num[j]][k]+ItoC(j);
+			}
+			//cout<<i<<" "<<j<<" "<<dp[i][j]<<endl;
+		}
+	}
+	string res=init_str;
+	for(auto &st:dp[n]) if(res==init_str || compstring(st, res, isMin)) res=st;
+	return res;
 }
 
 int main() {
@@ -41,22 +62,12 @@ int main() {
 	cin.tie(NULL);
 	cout.tie(NULL);
 
-	cin>>N>>M;
-	for(int i=0; i<N; i++) {
-		int tmp;
-		cin>>tmp;
-		arr.push_back(tmp);
-	}
-	sz = static_cast<int>(pow(2, ceil(log2(N))+1));
-	tree_min.resize(sz, INT_MAX);
-	tree_max.resize(sz, INT_MIN);
-	init(arr, tree_min, 1, 0, N-1, true);
-	init(arr, tree_max, 1, 0, N-1, false);
-
-	for(int i=0; i<M; i++) {
-		int l, r;
-		cin>>l>>r;
-		cout<<tree_prce(tree_min, 1, 0, N-1, l-1, r-1, true)<<"\n";
+	int t;
+	cin>>t;
+	for(int i=0;i<t;i++) {
+		int n;
+		cin>>n;
+		cout<<dynamic(n, true)<<" "<<dynamic(n, false)<<endl;
 	}
 	return 0;
 }
