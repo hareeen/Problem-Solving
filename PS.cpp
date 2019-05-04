@@ -19,42 +19,56 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-int num[10]={6,2,5,5,4,5,6,3,7,6};
-
-
-char ItoC(int n) {
-	return static_cast<char>(n+static_cast<int>('0'));
+int init(vector<int> &a, vector<int> &tree, int node, int s, int e) {
+	if(s==e) return tree[node]=a[s];
+	else return tree[node]=init(a, tree, node*2, s, (s+e)/2)+init(a, tree, node*2+1, (s+e)/2+1, e);
 }
 
-// lhs < rhs, isMin=true 면 true 반환, isMin=false면 반대로
-bool compstring(const string& lhs, const string& rhs, bool isMin) {
-	if(lhs.size()!=rhs.size()) return isMin^(lhs.size()>rhs.size());
-	for(int i=0; i<lhs.size(); i++) if(lhs[i]!=rhs[i]) return isMin^(lhs[i]>rhs[i]);
-	return false;
+//l에서 r이 구하는 거
+int sum(vector<int> &tree, int node, int l, int r, int s, int e) {
+	if(e<l || r<s) return 0;
+	else if(l<=s && e<=r) return tree[node];
+	else return sum(tree, node*2, l, r, s, (s+e)/2)+sum(tree, node*2+1, l, r, (s+e)/2+1, e);
 }
 
-string dynamic(int n, bool isMin) {
-	vector<vector<string> > dp(n+1, vector<string>(10, ""));
-	const string init_str=isMin?"0000000000000000000000000000000000000000000000000000000":"0";
-	for(int i=1; i<=n; i++) {
-		for(int j=0; j<10; j++) {
-			if(i<num[j]) {
-				dp[i][j]=init_str;
-				continue;
-			}
-			bool isVaild=false;
-			dp[i][j]=init_str;
-			for(int k=0; k<10; k++) {
-				//cout<<dp[i-num[j]][k]+ItoC(j)<<" "<<dp[i][j]<<endl;
-				if(dp[i-num[j]][k]=="" && j==0) continue;
-				if(dp[i-num[j]][k]!=init_str && compstring(dp[i-num[j]][k]+ItoC(j), dp[i][j], isMin)) dp[i][j]=dp[i-num[j]][k]+ItoC(j);
-			}
-			//cout<<i<<" "<<j<<" "<<dp[i][j]<<endl;
-		}
+void update(vector<int> &tree, int node, int s, int e, int idx, int diff) {
+	if(idx<s || idx>e) return;
+	tree[node]+=diff;
+	if(s!=e) {
+		update(tree, node*2, s, (s+e)/2, idx, diff);
+		update(tree, node*2+1, (s+e)/2+1, e, idx, diff);
 	}
-	string res=init_str;
-	for(auto &st:dp[n]) if(res==init_str || compstring(st, res, isMin)) res=st;
-	return res;
+	return;
+}
+
+void process() {
+	int N, M;
+	vector<int> index;
+	vector<int> idx_save;
+
+	cin>>N>>M;
+	index.resize(N+M+1);
+	idx_save.resize(N);
+	for(int i=0; i<N; i++) index[i]=1;
+	for(int i=0; i<N; i++) idx_save[i]=N-i-1;
+
+	int top=N;
+	int tree_s=static_cast<int>(pow(2, ceil(log2(N+M+1))+1));
+	vector<int> tree(tree_s);
+
+	init(index, tree, 1, 0, index.size()-1);
+	for(int i=0; i<M; i++) {
+		int query;
+		cin>>query;
+		query--;
+
+		cout<<sum(tree, 1, idx_save[query]+1, index.size()-1, 0, index.size()-1)<<" ";
+		update(tree, 1, 0, index.size()-1, idx_save[query], -1);
+		idx_save[query]=top++;
+		update(tree, 1, 0, index.size()-1, idx_save[query], 1);
+	}
+	cout<<'\n';
+	return;
 }
 
 int main() {
@@ -64,10 +78,7 @@ int main() {
 
 	int t;
 	cin>>t;
-	for(int i=0;i<t;i++) {
-		int n;
-		cin>>n;
-		cout<<dynamic(n, true)<<" "<<dynamic(n, false)<<endl;
-	}
+	for(int i=0; i<t; i++) process();
+	cout<<flush;
 	return 0;
 }
