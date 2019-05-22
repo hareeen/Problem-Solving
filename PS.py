@@ -1,8 +1,8 @@
 def main():
-  l=[1,1]
-  for i in range(2,int(input())+1):
-    l.append((l[-1]+l[-2])%10007)
-  print(l[-1])
-
+  n = int(input()) - 1
+  l = [(0, 1)]
+  for _ in range(n):
+    l.append((sum(l[-1]), l[-1][0]))
+  print(sum(l[-1]))
 
 main()
