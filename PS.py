@@ -1,6 +1,8 @@
 def main():
-  n = int(input())
-  print('1' * n + '0' * (n - 1))
+  tc = int(input())
+  for _ in range(tc):
+    n, s = input().split()
+    print(''.join(map(lambda x: x * int(n), list(s))))
 
 
 main()
