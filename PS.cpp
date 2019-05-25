@@ -29,16 +29,16 @@ int main() {
 	int start_v;
 	cin>>start_v;
 	start_v--;
-	vector<vector<pi>> adjL;
+	vector<vector<pi> > adjL;
 	adjL.resize(V);
-	for(int i=0;i<E;i++) {
+	for(int i=0; i<E; i++) {
 		int u,v,w;
 		cin>>u>>v>>w;
-		u--;v--;
+		u--; v--;
 		adjL[u].push_back(pi(v, w));
 	}
 
-	priority_queue<pi, vector<pi>, greater<pi>> pq;
+	priority_queue<pi, vector<pi>, greater<pi> > pq;
 	vector<int> dist(V, INT_MAX);
 	dist[start_v]=0;
 	pq.push(pi(0, start_v));
