@@ -5,4 +5,5 @@ def main():
     l.append((sum(l[-1]), l[-1][0]))
   print(sum(l[-1]))
 
+
 main()
