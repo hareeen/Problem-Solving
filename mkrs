@@ -1,0 +1,2 @@
+# Compile Script of PS.rs
+rustc --edition=2018 PS.rs -o a.out
