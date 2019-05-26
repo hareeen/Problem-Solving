@@ -19,25 +19,32 @@ using pli = pair<i64, i64>;
 using ti  = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-bool contains(pli x, pli a, pli b) {
-  return (a.first <= x.first) && (x.first <= b.first) && (a.second <= x.second) && (x.second <= b.second);
-}
+string compress(vector<vector<int> > &data, pi st, pi ed) {
+  // printf("%d %d %d %d\n", st.first, st.second, ed.first, ed.second);
+  if(st == ed) return data[st.first][st.second] == 0 ? "0" : "1";
 
-void sumOfZ(pli &target, pli st, pli ed, i64 acc, i64 num) {
-  if(!contains(target, st, ed)) return;
+  auto mid = pi((st.first + ed.first) / 2, (st.second + ed.second) / 2);
+  vector<string> res;
+  res.push_back(compress(data, st, mid));
+  res.push_back(compress(data, pi(st.first, mid.second + 1), pi(mid.first, ed.second)));
+  res.push_back(compress(data, pi(mid.first + 1, st.second), pi(ed.first, mid.second)));
+  res.push_back(compress(data, pi(mid.first + 1, mid.second + 1), ed));
 
-  if(st == ed) {
-    if(st == target) {
-      cout << num << endl;
-      exit(0);
+  auto st_ret      = string();
+  auto canCompress = true;
+  auto tpe         = -1;
+  for(auto &str:res) {
+    canCompress &= (str.size() == 1);
+    if(tpe == -1) {
+      tpe = (str[0] == '0' ? 0 : 1);
+    } else if((str[0] == '0' ? 0 : 1) != tpe) {
+      canCompress = false;
     }
-    return;
+    st_ret += str;
+    // cout << str << endl;
   }
-  auto mid = pli((st.first + ed.first) / 2, (st.second + ed.second) / 2);
-  sumOfZ(target, st, mid, acc / 4, num);
-  sumOfZ(target, pli(mid.first + 1, st.second), pli(ed.first, mid.second), acc / 4, num + acc);
-  sumOfZ(target, pli(st.first, mid.second + 1), pli(mid.first, ed.second), acc / 4, num + 2 * acc);
-  sumOfZ(target, pli(mid.first + 1, mid.second + 1), ed, acc / 4, num + 3 * acc);
+  if(canCompress) return tpe == 0 ? "0" : "1";
+  else return "(" + st_ret + ")";
 }
 
 int main() {
@@ -45,11 +52,17 @@ int main() {
   cin.tie(NULL);
   cout.tie(NULL);
 
-  i64 N, r, c;
-  cin >> N >> r >> c;
-  auto target = pli(c, r);
-  auto sz     = static_cast<i64>(pow(2, N));
+  int N;
+  vector<vector<int> > data;
+  cin >> N;
+  for(auto i = 0; i < N; i++) {
+    vector<int> tmp;
+    string inp;
+    cin >> inp;
+    for(const auto &i:inp) tmp.push_back(i == '0' ? 0 : 1);
+    data.push_back(tmp);
+  }
 
-  sumOfZ(target, pli(0, 0), pli(sz - 1, sz - 1), sz * sz / 4, 0);
+  cout << compress(data, pi(0, 0), pi(N - 1, N - 1)) << endl;
   return 0;
 } // main
