@@ -19,46 +19,37 @@ using pli = pair<i64, i64>;
 using ti  = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+bool contains(pli x, pli a, pli b) {
+  return (a.first <= x.first) && (x.first <= b.first) && (a.second <= x.second) && (x.second <= b.second);
+}
+
+void sumOfZ(pli &target, pli st, pli ed, i64 acc, i64 num) {
+  if(!contains(target, st, ed)) return;
+
+  if(st == ed) {
+    if(st == target) {
+      cout << num << endl;
+      exit(0);
+    }
+    return;
+  }
+  auto mid = pli((st.first + ed.first) / 2, (st.second + ed.second) / 2);
+  sumOfZ(target, st, mid, acc / 4, num);
+  sumOfZ(target, pli(mid.first + 1, st.second), pli(ed.first, mid.second), acc / 4, num + acc);
+  sumOfZ(target, pli(st.first, mid.second + 1), pli(mid.first, ed.second), acc / 4, num + 2 * acc);
+  sumOfZ(target, pli(mid.first + 1, mid.second + 1), ed, acc / 4, num + 3 * acc);
+}
+
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int V, E;
-  cin >> V >> E;
-  int start_v;
-  cin >> start_v;
-  start_v--;
-  vector<vector<pi> > adjL;
-  adjL.resize(V);
-  for(int i = 0; i < E; i++) {
-    int u, v, w;
-    cin >> u >> v >> w;
-    u--;
-    v--;
-    adjL[u].push_back(pi(v, w));
-  }
+  i64 N, r, c;
+  cin >> N >> r >> c;
+  auto target = pli(c, r);
+  auto sz     = static_cast<i64>(pow(2, N));
 
-  priority_queue<pi, vector<pi>, greater<pi> > pq;
-  vector<int> dist(V, INT_MAX);
-  dist[start_v] = 0;
-  pq.push(pi(0, start_v));
-
-  while(!pq.empty()) {
-    auto top_elem = pq.top();
-    pq.pop();
-    if(top_elem.first > dist[top_elem.second]) continue;
-    for(auto [vertex, weight]:adjL[top_elem.second]) {
-      if(dist[vertex] > top_elem.first + weight) {
-        dist[vertex] = top_elem.first + weight;
-        pq.push(pi(top_elem.first + weight, vertex));
-      }
-    }
-  }
-  for(auto &i:dist) {
-    if(i == INT_MAX) cout << "INF" << '\n';
-    else cout << i << '\n';
-  }
-  cout << flush;
+  sumOfZ(target, pli(0, 0), pli(sz - 1, sz - 1), sz * sz / 4, 0);
   return 0;
 } // main
