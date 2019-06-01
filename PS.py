@@ -1,9 +1,4 @@
-def main():
-  n = int(input()) - 1
-  l = [(0, 1)]
-  for _ in range(n):
-    l.append((sum(l[-1]), l[-1][0]))
-  print(sum(l[-1]))
-
-
-main()
+a,b,c=map(int, input().split())
+if a>b: a,b=b,a
+b=min(a+1, b)
+print(a+b+2*c)
