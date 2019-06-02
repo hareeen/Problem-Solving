@@ -27,20 +27,18 @@ int main() {
 
   int N;
   vector<int> input;
-  vector<vector<int> > dp;
+  vector<int> lis;
   cin >> N;
   for(int i = 0; i < N; i++) {
     int a;
     cin >> a;
     input.push_back(a);
   }
-  dp.resize(N, vector<int>(N));
-  for(int intv = 1; intv < N; intv++) {
-    for(int j = 0; j < N - intv; j++) {
-      if(input[j] == input[j + intv]) dp[j][j + intv] = (intv == 1 ? 0 : dp[j + 1][j + intv - 1]);
-      else dp[j][j + intv] = min(dp[j + 1][j + intv], dp[j][j + intv - 1]) + 1;
-    }
+  for(const auto &i:input) {
+    auto it = lower_bound(lis.begin(), lis.end(), i, greater<int>());
+    if(it == lis.end()) lis.push_back(i);
+    else *it = i;
   }
-  cout << dp[0][N - 1] << endl;
+  cout << lis.size() << endl;
   return 0;
 } // main
