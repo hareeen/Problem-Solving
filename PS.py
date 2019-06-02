@@ -1,13 +1,11 @@
 N = int(input())
-l = []
-dp = []
-for i in range(N):
-  l.append(list(map(int, input().split())))
-  dp.append([0] * (i + 1))
-dp[0][0] = l[0][0]
+dp = [[0] + [1] * 9]
 for i in range(1, N):
-  dp[i][0] = dp[i - 1][0] + l[i][0]
-  dp[i][i] = dp[i - 1][i - 1] + l[i][i]
-  for j in range(1, i):
-    dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - 1]) + l[i][j]
-print(max(dp[-1]))
+  apd = [0] * 10
+  for j in range(10):
+    if j in (0, 9):
+      apd[j] = dp[-1][7 * (j // 9) + 1]
+    else:
+      apd[j] = dp[-1][j - 1] + dp[-1][j + 1]
+  dp.append(apd)
+print(sum(dp[-1]) % 1000000000)
