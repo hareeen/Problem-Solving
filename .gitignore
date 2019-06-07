@@ -8,3 +8,4 @@ __pycache__/
 Makefile
 .DS_Store
 in.txt
+.vscode
