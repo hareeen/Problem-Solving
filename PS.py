@@ -1,17 +1,34 @@
-N=int(input())
-l=list(map(int, input().split()))
-dp=[]
-for _ in range(N):
-  dp.append([-10**10]*(N+1))
-for i in range(N):
-  for j in range(N+1):
-    if i==0:
-      dp[i][j]=l[i]*j
-    else:
-      M=-10**10
-      k=0
-      while j-k*(i+1)>=0:
-        M=max(M, dp[i-1][j-k*(i+1)]+l[i]*k)
-        k+=1
-      dp[i][j]=M
-print(max(dp[-1]))
+import queue
+
+def tup_plus(a: tuple, b: tuple):
+    c = list()
+    for i in range(len(a)):
+        c.append(a[i]+b[i])
+    return tuple(c)
+
+
+def main():
+    N, M = map(int, input().split())
+    mp = []
+    for _ in range(N):
+        mp.append(list(map(bool, list(input()))))
+    que = queue.Queue()
+    que.put(((0, 0), 1))
+    while que.qsize():
+        curtup = que.get()
+        if curtup[0] == (N-1, M-1):
+            print(curtup[1])
+            break
+
+        def check(tup, plus):
+            ret = tup_plus(tup, plus)
+            return (ret[0] >= 0 and ret[0] < N and ret[1] >= 0 and ret[1] < M and mp[ret[0]][ret[1]] == 1)
+        for i in range(4):
+            pl = [(0, -1), (0, 1), (1, 0), (-1, 0)][i]
+            if check(curtup[0], pl):
+                que.put((tup_plus(curtup[0], pl), curtup[1]+1))
+        mp[curtup[0][0]][curtup[0][1]] = 0
+    return
+
+
+main()
