@@ -20,20 +20,14 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-using pii = pair<pi, int>;
-
-int N, M;
-vector<vector<bool>> mp, visit;
-
-pi plus_them(pi &a, pi &b)
+void que_append(queue<pi> &que, vector<bool> &check, int appd, int cur_t)
 {
-  return pi(a.first + b.first, a.second + b.second);
-}
-
-bool check(pi &cur_deco, pi &diff_deco)
-{
-  auto ret = plus_them(cur_deco, diff_deco);
-  return (ret.first >= 0 && ret.first < N && ret.second >= 0 && ret.second < M && visit[ret.first][ret.second]);
+  if (appd >= 0 && appd < check.size() && !check[appd])
+  {
+    que.push(pi(appd, cur_t + 1));
+    check[appd] = true;
+  }
+  return;
 }
 
 int main()
@@ -42,47 +36,24 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  cin >> N;
-  cin >> M;
-  mp.resize(N);
-  visit.resize(N);
-  for (int i = 0; i < N; i++)
-  {
-    string s;
-    cin >> s;
-    for (auto j : s)
-    {
-      mp[i].push_back(static_cast<bool>(j - '0'));
-      visit[i].push_back(static_cast<bool>(j - '0'));
-    }
-  }
-  queue<pii> que;
-  que.push(pii(pi(0, 0), 1));
-  vector<pi> diff;
-  diff.push_back(pi(0, -1));
-  diff.push_back(pi(0, 1));
-  diff.push_back(pi(-1, 0));
-  diff.push_back(pi(1, 0));
+  int N, K;
+  cin >> N >> K;
+  queue<pi> que;
+  que.push(pi(N, 0));
+  vector<bool> check(200001);
+  check[N] = true;
   while (!que.empty())
   {
     auto cur = que.front();
-    //out<<cur.first.first<<" "<<cur.first.second<<endl;
     que.pop();
-    if (cur.first == pi(N - 1, M - 1))
+    if (cur.first == K)
     {
       cout << cur.second << endl;
       break;
     }
-    mp[cur.first.first][cur.first.second] = false;
-    for (auto &d : diff)
-    {
-      if (check(cur.first, d))
-      {
-        auto pl = plus_them(cur.first, d);
-        que.push(pii(pl, cur.second + 1));
-        visit[pl.first][pl.second] = false;
-      }
-    }
+    que_append(que, check, cur.first + 1, cur.second);
+    que_append(que, check, cur.first - 1, cur.second);
+    que_append(que, check, cur.first * 2, cur.second);
   }
   return 0;
 }
