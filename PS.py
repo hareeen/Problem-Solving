@@ -1,12 +1,5 @@
-def main():
-    s = 0
-    l = ['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ']
-    for i in input():
-        for j in range(len(l)):
-            if i in l[j]:
-                s += (j+3)
-                break
-    print(s)
-
-
-main()
+from math import sqrt as s
+n=int(input())
+t=int(s(n*2+s(n*2-2)-1))
+v=t*(t+1)//2-n
+print("%d/%d"%((v+1,t-v) if t%2==1 else (t-v,v+1)))
