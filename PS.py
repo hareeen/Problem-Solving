@@ -1,1 +1,1 @@
-print(sum(map(int,input().split())))
+n=int(input());print(n//100+n%100 if n%10==0 else n//10+n%10)
