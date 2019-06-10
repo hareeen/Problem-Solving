@@ -1,1 +1,1 @@
-n=int(input());print(n//100+n%100 if n%10==0 else n//10+n%10)
+for i in range(int(input())):print("Case #{}: {}".format(i+1,sum(map(int, input().split()))))
