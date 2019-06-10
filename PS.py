@@ -1,5 +1,17 @@
-from math import sqrt as s
-n=int(input())
-t=int(s(n*2+s(n*2-2)-1))
-v=t*(t+1)//2-n
-print("%d/%d"%((v+1,t-v) if t%2==1 else (t-v,v+1)))
+l = 'qwertyuiopasdfghjklzxcvbnm'
+s = 0
+for i in range(int(input())):
+    wd = input()
+    flg = True
+    for c in l:
+        if c in wd:
+            lst = -1
+            for j in range(len(wd)):
+                if wd[j] == c:
+                    if lst != -1 and lst != j-1:
+                        flg = False
+                    else:
+                        lst = j
+    if flg:
+        s += 1
+print(s)
