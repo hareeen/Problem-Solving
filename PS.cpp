@@ -20,21 +20,92 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-using pii = pair<pi, int>;
+using psi = pair<string, int>;
 
-void que_append(pii to_append, int &M, int &N, vector<vector<int>> &mp, vector<vector<bool>> &check, queue<pii> &que)
+void addZero(string &s, int n)
 {
-  auto appendDeco = to_append.first;
-  auto appendDay = to_append.second;
-  if (appendDeco.first >= 0 && appendDeco.first < N &&
-      appendDeco.second >= 0 && appendDeco.second < M &&
-      !check[appendDeco.first][appendDeco.second])
+  for (int i = 0; i < n; i++)
+    s += '0';
+}
+
+void addDigit(psi &t, int adder)
+{
+  addZero(t.first, adder);
+  t.second += adder;
+}
+
+char ntoCh(int n)
+{
+  return static_cast<char>(48 + n);
+}
+
+int chtoN(char ch)
+{
+  return static_cast<int>(ch - '0');
+}
+
+psi add_(psi l, psi r)
+{
+  if (l.second > r.second)
+    swap(l, r);
+  addDigit(l, r.second - l.second);
+  if (l.first.length() > r.first.length())
+    swap(l, r);
+  string ret;
+  int carry = 0;
+  string st_l = l.first, st_r = r.first;
+  int lenL = st_l.length(), lenR = st_r.length();
+  reverse(st_l.begin(), st_l.end());
+  reverse(st_r.begin(), st_r.end());
+  for (int i = 0; i < lenR; i++)
   {
-    que.push(to_append);
-    check[appendDeco.first][appendDeco.second] = true;
-    mp[appendDeco.first][appendDeco.second] = appendDay;
+    int plus;
+    if (i < lenL)
+      plus = carry + chtoN(st_l[i]) + chtoN(st_r[i]);
+    else
+      plus = carry + chtoN(st_r[i]);
+    ret += ntoCh(plus % 10);
+    carry = plus / 10;
   }
-  return;
+  if (carry != 0)
+    ret += ntoCh(carry);
+  reverse(ret.begin(), ret.end());
+  return psi(ret, l.second);
+}
+
+string mul_one(string s, int n)
+{
+  string ret;
+  int carry = 0;
+
+  reverse(s.begin(), s.end());
+  for (const auto &i : s)
+  {
+    int plus = carry + chtoN(i) * n;
+    ret += ntoCh(plus % 10);
+    carry = plus / 10;
+  }
+  if (carry != 0)
+    ret += ntoCh(carry);
+  reverse(ret.begin(), ret.end());
+  return ret;
+}
+
+psi mul_(psi l, psi r)
+{
+  if (l.first.length() > r.first.length())
+    swap(l, r);
+  string st_l = l.first, st_r = r.first;
+  reverse(st_l.begin(), st_l.end());
+  psi ret = psi(string("0"), 0);
+  for (int i = 0; i < st_l.length(); i++)
+  {
+    int ntomul = chtoN(st_l[i]);
+    string toAdd = mul_one(st_r, ntomul);
+    addZero(toAdd, i);
+    ret = add_(ret, psi(toAdd, 0));
+  }
+  return psi(ret.first, l.second + r.second);
 }
 
 int main()
@@ -42,57 +113,30 @@ int main()
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
-
-  int M, N;
-  cin >> M >> N;
-  vector<vector<int>> mp(N);
-  vector<vector<bool>> check(N);
-  queue<pii> que;
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < M; j++)
-    {
-      int t;
-      cin >> t;
-      mp[i].push_back(t);
-      check[i].push_back((t != 0));
-      if (t == 1)
-        que.push(pii(pi(i, j), 0));
-    }
+  /*
+  string a;
+  int n;
+  string filtered;
+  int digit;
+  cin >> a >> n;
+  for(int i = 0; i < a.length(); i++) {
+    if(a[i] == '.') digit = a.length() - i - 1;
+    else filtered += a[i];
   }
-  int dx[4] = {1, -1, 0, 0};
-  int dy[4] = {0, 0, 1, -1};
-  bool che_ini = true;
-  for (const auto &i : check)
-    for (const auto &j : i)
-      che_ini &= j;
-  if (che_ini)
-  {
-    cout << 0 << endl;
-    return 0;
+  psi toCalc(filtered, digit);
+  psi result("10", 0);
+  while(n > 0) {
+    if(n % 2) result = mul_(result, toCalc);
+    toCalc = mul_(toCalc, toCalc);
+    n     /= 2;
   }
-  while (!que.empty())
-  {
-    auto curDeco = que.front().first;
-    auto curDay = que.front().second;
-    que.pop();
-    for (int i = 0; i < 4; i++)
-      que_append(pii(pi(curDeco.first + dx[i], curDeco.second + dy[i]), curDay + 1), M, N, mp, check, que);
+  for(int i = 0; i < result.first.length() - 1; i++) {
+    if(i == result.first.length() - result.second - 1) cout << '.';
+    cout << result.first[i];
   }
-  int res = INT_MIN;
-  for (const auto &i : mp)
-  {
-    for (const auto &j : i)
-    {
-      res = max(res, j);
-      if (j == 0)
-      {
-        cout << -1 << endl;
-        return 0;
-      }
-    }
-  }
-
-  cout << res << endl;
+  */
+  string a, b;
+  cin >> a >> b;
+  cout << add_(psi(a, 0), psi(b, 0)).first << endl;
   return 0;
 }
