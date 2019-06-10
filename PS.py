@@ -1,20 +1,12 @@
 def main():
-    l = []
-    for i in range(9):
-        l.append(int(input()))
-    l.sort()
-    bf = []
-    for i in range(9):
-        for j in range(9):
-            if i != j:
-                bf.append((i, j, l[i]+l[j]))
-    for i in bf:
-        if sum(l)-i[2] == 100:
-            for j in range(9):
-                if not j in i[:2]:
-                    print(l[j])
-            return
-    return
+    s = 0
+    l = ['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ']
+    for i in input():
+        for j in range(len(l)):
+            if i in l[j]:
+                s += (j+3)
+                break
+    print(s)
 
 
 main()
