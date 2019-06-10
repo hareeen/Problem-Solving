@@ -1,1 +1,1 @@
-for i in range(int(input())):print("Case #{}: {}".format(i+1,sum(map(int, input().split()))))
+for i in range(int(input())):a,b=map(int,input().split());print("Case #{}: {} + {} = {}".format(i+1,a,b,a+b))
