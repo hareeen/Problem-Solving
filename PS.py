@@ -1,6 +1,6 @@
 n = int(input())
-l = list(map(int, input().split()))
-l.sort()
-for i in range(n):
-    l[i] *= (n-i)
-print(sum(l))
+l1 = list(map(int, input().split()))
+l2 = list(map(int, input().split()))
+l1.sort(reverse=True)
+l2.sort()
+print(sum([l1[i]*l2[i] for i in range(n)]))
