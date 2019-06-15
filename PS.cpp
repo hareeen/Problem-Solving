@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include <stack>
+#include <list>
 #include <tuple>
 #include <string>
 #include <algorithm>
@@ -37,16 +38,35 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  i64 n, m, r;
-  cin >> n >> r >> m;
-  i64 ans = 1;
-  while (n != 0 || r != 0)
+  int n, k;
+  cin >> n >> k;
+  list<int> linkedList;
+  vector<int> output;
+  for (int i = 1; i <= n; i++)
+    linkedList.push_back(i);
+  auto it = linkedList.begin();
+  for (int i = 0; i < n; i++)
   {
-    ans *= nCr(n % m, r % m, m);
-    ans %= m;
-    n /= m;
-    r /= m;
+    for (int j = 0; j < k - 1; j++)
+    {
+      if (it == linkedList.end())
+        it = linkedList.begin();
+      it++;
+    }
+    if (it == linkedList.end())
+      it = linkedList.begin();
+    output.push_back(*it);
+    if (i == n - 1)
+      break;
+    it = linkedList.erase(it);
   }
-  cout << ans << endl;
+  cout << '<';
+  for (const auto &el : output)
+  {
+    cout << el;
+    if (el != output.back())
+      cout << ", ";
+  }
+  cout << '>' << endl;
   return 0;
 }
