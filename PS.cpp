@@ -26,47 +26,44 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  vector<vector<int>> adjl;
-  vector<int> remain;
-  vector<bool> check;
-  cin >> N >> M;
-  adjl.resize(N);
-  remain.resize(N);
-  check.resize(N);
-  for (int i = 0; i < M; i++)
-  {
-    int a, b;
-    cin >> a >> b;
-    a--;
-    b--;
-    adjl[a].push_back(b);
-    remain[b]++;
-  }
-  priority_queue<int, vector<int>, greater<int>> que;
+  int N;
+  int to_push = 1;
+  cin >> N;
+  stack<int> stk;
+  vector<bool> output;
   for (int i = 0; i < N; i++)
   {
-    if (remain[i] == 0)
+    int target;
+    cin >> target;
+    if (to_push <= target)
     {
-      que.push(i);
-      check[i] = true;
-    }
-  }
-  while (!que.empty())
-  {
-    int cur = que.top();
-    cout << cur + 1 << " ";
-    que.pop();
-    for (auto &el : adjl[cur])
-    {
-      remain[el]--;
-      if (remain[el] == 0)
+      int diff = target - to_push;
+      for (int j = 0; j <= diff; j++)
       {
-        que.push(el);
-        check[el] = true;
+        stk.push(to_push++);
+        output.push_back(true);
+      }
+      stk.pop();
+      output.push_back(false);
+    }
+    else
+    {
+      while (true)
+      {
+        if (stk.empty())
+        {
+          cout << "NO" << endl;
+          return 0;
+        }
+        bool top_same = (stk.top() == target);
+        stk.pop();
+        output.push_back(false);
+        if (top_same)
+          break;
       }
     }
   }
-  cout << endl;
+  for (auto el : output)
+    cout << (el ? '+' : '-') << '\n';
   return 0;
 }
