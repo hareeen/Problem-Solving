@@ -26,17 +26,47 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  vector<int> v(10001);
-  cin >> N;
+  int N, M;
+  vector<vector<int>> adjl;
+  vector<int> remain;
+  vector<bool> check;
+  cin >> N >> M;
+  adjl.resize(N);
+  remain.resize(N);
+  check.resize(N);
+  for (int i = 0; i < M; i++)
+  {
+    int a, b;
+    cin >> a >> b;
+    a--;
+    b--;
+    adjl[a].push_back(b);
+    remain[b]++;
+  }
+  priority_queue<int, vector<int>, greater<int>> que;
   for (int i = 0; i < N; i++)
   {
-    int t;
-    cin >> t;
-    v[t]++;
+    if (remain[i] == 0)
+    {
+      que.push(i);
+      check[i] = true;
+    }
   }
-  for (int i = 1; i <= 10000; i++)
-    for (int j = 0; j < v[i]; j++)
-      cout << i << '\n';
+  while (!que.empty())
+  {
+    int cur = que.top();
+    cout << cur + 1 << " ";
+    que.pop();
+    for (auto &el : adjl[cur])
+    {
+      remain[el]--;
+      if (remain[el] == 0)
+      {
+        que.push(el);
+        check[el] = true;
+      }
+    }
+  }
+  cout << endl;
   return 0;
 }
