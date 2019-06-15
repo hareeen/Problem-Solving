@@ -20,50 +20,33 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+i64 nCr(i64 n, i64 r, i64 m)
+{
+  if (n < r)
+    return 0;
+  vector<vector<i64>> d(n + 1, vector<i64>(r + 1, 1));
+  for (i64 i = 1; i <= n; i++)
+    for (i64 j = 1; j <= min(n, r); j++)
+      d[i][j] = (d[i - 1][j - 1] + (j != i ? d[i - 1][j] : 0)) % m;
+  return d[n][r];
+}
+
 int main()
 {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  int to_push = 1;
-  cin >> N;
-  stack<int> stk;
-  vector<bool> output;
-  for (int i = 0; i < N; i++)
+  i64 n, m, r;
+  cin >> n >> r >> m;
+  i64 ans = 1;
+  while (n != 0 || r != 0)
   {
-    int target;
-    cin >> target;
-    if (to_push <= target)
-    {
-      int diff = target - to_push;
-      for (int j = 0; j <= diff; j++)
-      {
-        stk.push(to_push++);
-        output.push_back(true);
-      }
-      stk.pop();
-      output.push_back(false);
-    }
-    else
-    {
-      while (true)
-      {
-        if (stk.empty())
-        {
-          cout << "NO" << endl;
-          return 0;
-        }
-        bool top_same = (stk.top() == target);
-        stk.pop();
-        output.push_back(false);
-        if (top_same)
-          break;
-      }
-    }
+    ans *= nCr(n % m, r % m, m);
+    ans %= m;
+    n /= m;
+    r /= m;
   }
-  for (auto el : output)
-    cout << (el ? '+' : '-') << '\n';
+  cout << ans << endl;
   return 0;
 }
