@@ -1,3 +1,1 @@
-import functools
-n=int(input())
-print(1 if n==0 else functools.reduce(int.__mul__,range(1,n+1)))
+l=[0];exec("a,b=map(int,input().split());l.append(l[-1]+b-a);"*4);print(max(l))
