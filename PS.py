@@ -1,6 +1,2 @@
-n = int(input())
-l1 = list(map(int, input().split()))
-l2 = list(map(int, input().split()))
-l1.sort(reverse=True)
-l2.sort()
-print(sum([l1[i]*l2[i] for i in range(n)]))
+input();s=set(map(int,input().split()))
+input();print('\n'.join(map(lambda x:'1' if int(x) in s else '0',input().split())))
