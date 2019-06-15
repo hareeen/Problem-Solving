@@ -1,13 +1,3 @@
-_s = 0
-a = 0
-lst = ''
-for i in input():
-    if i == '(':
-        a += 1
-    else:
-        a -= 1
-        _s += 1
-        if i != lst:
-            _s += (a-1)
-    lst = i
-print(_s)
+import functools
+n=int(input())
+print(1 if n==0 else functools.reduce(int.__mul__,range(1,n+1)))
