@@ -1,1 +1,2 @@
-l=[0];exec("a,b=map(int,input().split());l.append(l[-1]+b-a);"*4);print(max(l))
+l=[1,1,1,2,2];exec("l+=[l[-1]+l[-5]];"*95)
+for _ in range(int(input())):print(l[int(input())-1]) 
