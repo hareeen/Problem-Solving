@@ -64,14 +64,16 @@ int main()
 
   int N, M;
   cin >> N >> M;
-  vector<int> parent(N);
+  vector<int> parent(++N);
   ufinit(parent);
   for (int i = 0; i < M; i++)
   {
-    int a, b;
-    cin >> a >> b;
-    ufunion(parent, --a, --b);
+    int md, a, b;
+    cin >> md >> a >> b;
+    if (md == 0)
+      ufunion(parent, a, b);
+    else
+      cout << (uffind(parent, a) == uffind(parent, b) ? "YES" : "NO") << '\n';
   }
-  cout << ufcount(parent) << endl;
   return 0;
 }
