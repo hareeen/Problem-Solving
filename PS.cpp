@@ -29,27 +29,34 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
-  vector<vector<bool>> vec(N);
+  int N, K;
+  cin >> N >> K;
+  vector<int> coins;
   for (int i = 0; i < N; i++)
   {
-    for (int j = 0; j < N; j++)
+    int t;
+    cin >> t;
+    coins.push_back(t);
+  }
+  sort(M_iterall(coins), greater<int>());
+  vector<int> dp(K + 1);
+  dp[0] = 1;
+  for (int i = 0; i < N; i++)
+  {
+    vector<int> dp_append(K + 1);
+    for (int j = 0; j <= K; j++)
     {
-      int t;
-      cin >> t;
-      vec[i].push_back(static_cast<bool>(t));
+      int _s = 0;
+      int cur = j - coins[i];
+      while (cur >= 0)
+      {
+        _s += dp[cur];
+        cur -= coins[i];
+      }
+      dp_append[j] = dp[j] + _s;
     }
+    dp = dp_append;
   }
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-      for (int k = 0; k < N; k++)
-        vec[j][k] = vec[j][k] | (vec[j][i] & vec[i][k]);
-  for (const auto &v : vec)
-  {
-    for (const auto &el : v)
-      cout << el << " ";
-    cout << '\n';
-  }
+  cout << dp[K] << endl;
   return 0;
 }
