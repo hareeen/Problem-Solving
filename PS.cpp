@@ -29,34 +29,25 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, K;
-  cin >> N >> K;
-  vector<int> coins;
+  int N;
+  cin >> N;
+  vector<vector<pi>> sche(N + 1);
   for (int i = 0; i < N; i++)
   {
-    int t;
-    cin >> t;
-    coins.push_back(t);
+    int Ti, Pi;
+    cin >> Ti >> Pi;
+    if (Ti + i <= N)
+      sche[Ti + i].push_back(pi(i, Pi));
   }
-  sort(M_iterall(coins), greater<int>());
-  vector<int> dp(K + 1);
-  dp[0] = 1;
-  for (int i = 0; i < N; i++)
+  vector<int> dp;
+  dp.push_back(0);
+  for (int i = 1; i <= N; i++)
   {
-    vector<int> dp_append(K + 1);
-    for (int j = 0; j <= K; j++)
-    {
-      int _s = 0;
-      int cur = j - coins[i];
-      while (cur >= 0)
-      {
-        _s += dp[cur];
-        cur -= coins[i];
-      }
-      dp_append[j] = dp[j] + _s;
-    }
-    dp = dp_append;
+    int _m = dp.back();
+    for (auto el : sche[i])
+      _m = max(el.second + dp[el.first], _m);
+    dp.push_back(_m);
   }
-  cout << dp[K] << endl;
+  cout << dp.back() << endl;
   return 0;
 }
