@@ -1,1 +1,1 @@
-i=input();print(*map(i.count,map(chr,range(97,123))))
+x,y,w,h=map(int,input().split());print(min(x,y,w-x,h-y))
