@@ -29,21 +29,27 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, K;
-  vector<int> coins;
-  cin >> N >> K;
+  int N;
+  cin >> N;
+  vector<vector<bool>> vec(N);
   for (int i = 0; i < N; i++)
   {
-    int tmp;
-    cin >> tmp;
-    coins.push_back(tmp);
+    for (int j = 0; j < N; j++)
+    {
+      int t;
+      cin >> t;
+      vec[i].push_back(static_cast<bool>(t));
+    }
   }
-
-  reverse(M_iterall(coins));
-  int res = 0;
-  for (const auto &el : coins)
-    res += K / el, K %= el;
-  cout << res << endl;
-
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+      for (int k = 0; k < N; k++)
+        vec[j][k] = vec[j][k] | (vec[j][i] & vec[i][k]);
+  for (const auto &v : vec)
+  {
+    for (const auto &el : v)
+      cout << el << " ";
+    cout << '\n';
+  }
   return 0;
 }
