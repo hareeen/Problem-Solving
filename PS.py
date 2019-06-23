@@ -1,2 +1,5 @@
-l=[1,1,1,2,2];exec("l+=[l[-1]+l[-5]];"*95)
-for _ in range(int(input())):print(l[int(input())-1]) 
+exec('''n=int(input())+1;k=int(input());l=[[1]*(k+1)]
+for _ in range(n):l+=[[0]*(k+1)]
+for i in range(n):
+    for j in range(k):l[i+1][j+1]=l[i][j+1]+l[i+1][j]
+print(l[-1][-1]);'''*int(input()))
