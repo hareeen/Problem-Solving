@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <functional>
 #include <numeric>
+#include <unordered_map>
 
 #include <cmath>
 #include <cstdio>
@@ -38,22 +39,59 @@ int uffind(vector<int> &parent, int x)
     return parent[x] = uffind(parent, parent[x]);
 }
 
-void ufunion(vector<int> &parent, int x, int y)
+int ufunion_count(vector<int> &parent, vector<int> &nodeCount, int x, int y)
 {
-  parent[uffind(parent, y)] = uffind(parent, x);
-  return;
+  auto xroot = uffind(parent, x);
+  auto yroot = uffind(parent, y);
+  if (xroot != yroot)
+  {
+    parent[yroot] = xroot;
+    nodeCount[xroot] += nodeCount[yroot];
+    nodeCount[y] = 1;
+  }
+  return nodeCount[xroot];
 }
 
-int ufcount(vector<int> &parent)
+int ufcount(vector<int> &parent, int x)
 {
   int ret = 0;
-  vector<bool> count(parent.size());
+  int target = uffind(parent, x);
   for (const auto &el : parent)
-    count[uffind(parent, el)] = true;
-  for (auto el : count)
-    if (el)
+    if (uffind(parent, el) == target)
       ret++;
   return ret;
+}
+
+void process()
+{
+  int N;
+  int cur_max = 0;
+  cin >> N;
+  vector<int> parent(2 * N);
+  vector<int> nodeCount(2 * N, 1);
+  unordered_map<string, int> _map;
+  ufinit(parent);
+  for (int i = 0; i < N; i++)
+  {
+    int i1, i2;
+    string s1, s2;
+    cin >> s1 >> s2;
+
+    auto it1 = _map.find(s1);
+    if (it1 == _map.end())
+      i1 = _map[s1] = cur_max++;
+    else
+      i1 = it1->second;
+
+    auto it2 = _map.find(s2);
+    if (it2 == _map.end())
+      i2 = _map[s2] = cur_max++;
+    else
+      i2 = it2->second;
+
+    cout << ufunion_count(parent, nodeCount, i1, i2) << '\n';
+  }
+  return;
 }
 
 int main()
@@ -62,18 +100,9 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
-  vector<int> parent(++N);
-  ufinit(parent);
-  for (int i = 0; i < M; i++)
-  {
-    int md, a, b;
-    cin >> md >> a >> b;
-    if (md == 0)
-      ufunion(parent, a, b);
-    else
-      cout << (uffind(parent, a) == uffind(parent, b) ? "YES" : "NO") << '\n';
-  }
+  int T;
+  cin >> T;
+  for (int tc = 0; tc < T; tc++)
+    process();
   return 0;
 }
