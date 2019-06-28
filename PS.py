@@ -1,15 +1,11 @@
-def pow_fast(n, e, MOD=10):  # O(log e)
-    _mul = n
-    _res = 1
-    for digit in str(bin(e))[2:][::-1]:
-        if digit == '1':
-            _res *= _mul
-            _res %= MOD
-        _mul *= _mul
-        _mul %= MOD
-    return _res
-
-
-for _ in range(int(input())):
-    n, e = map(int, input().split())
-    print((pow_fast(n, e)-1) % 10+1)
+l=[]
+m=-999999
+id=-1
+for i in range(9):
+    l.append(int(input()))
+for el in enumerate(l):
+    if m<el[1]:
+        m=el[1]
+        id=el[0]+1
+print(m)
+print(id)
