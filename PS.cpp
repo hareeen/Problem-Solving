@@ -24,47 +24,44 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-char toCh(int n)
+void mp_assign(vector<vector<int>> &mp, vector<pi> &a, int idx)
 {
-  return static_cast<char>(n + 65);
-}
-
-int toInt(char c)
-{
-  if (c == '.')
-    return -1;
-  else
-    return static_cast<int>(c) - 65;
-}
-
-void order(vector<vector<int>> &tree, int node, int mode)
-{
-  if (node == -1)
-    return;
-  switch (mode)
-  {
-  case 0:
-    cout << toCh(node);
-    order(tree, tree[node][0], mode);
-    order(tree, tree[node][1], mode);
-    break;
-  case 1:
-    order(tree, tree[node][0], mode);
-    cout << toCh(node);
-    order(tree, tree[node][1], mode);
-    break;
-  case 2:
-    order(tree, tree[node][0], mode);
-    order(tree, tree[node][1], mode);
-    cout << toCh(node);
-    break;
-
-  default:
-    break;
-  }
-  if (node == 0)
-    cout << endl;
+  mp[a[idx].first][a[idx].second] = -1;
   return;
+}
+
+int bfs(int N, int M, vector<vector<int>> &mp, vector<pi> &virus)
+{
+  int dx[4] = {0, 0, 1, -1};
+  int dy[4] = {1, -1, 0, 0};
+  queue<pi> que;
+  for (const auto &el : virus)
+    que.push(pi(el)), mp[el.first][el.second] = 1;
+  while (!que.empty())
+  {
+    auto cur = que.front();
+    que.pop();
+    for (int i = 0; i < 4; i++)
+    {
+      int corX = cur.first + dx[i];
+      int corY = cur.second + dy[i];
+      if (corX >= 0 && corX < N && corY >= 0 && corY < M && mp[corX][corY] == 0)
+      {
+        que.push(pi(corX, corY));
+        mp[corX][corY] = 1;
+      }
+    }
+  }
+  int _s = 0;
+  for (int i = 0; i < N; i++)
+  {
+    for (int j = 0; j < M; j++)
+    {
+      if (mp[i][j] == 0)
+        _s++;
+    }
+  }
+  return _s;
 }
 
 int main()
@@ -73,17 +70,40 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
-  vector<vector<int>> tree(N, vector<int>(2, -1));
+  int N, M;
+  cin >> N >> M;
+  vector<vector<int>> _map(N);
+  vector<pi> virus;
+  vector<pi> empty;
   for (int i = 0; i < N; i++)
   {
-    char u, v1, v2;
-    cin >> u >> v1 >> v2;
-    tree[toInt(u)][0] = toInt(v1);
-    tree[toInt(u)][1] = toInt(v2);
+    for (int j = 0; j < M; j++)
+    {
+      int t;
+      cin >> t;
+      _map[i].push_back((t == 1 ? -1 : 0));
+      if (t == 0)
+        empty.push_back(pi(i, j));
+      if (t == 2)
+        virus.push_back(pi(i, j));
+    }
   }
-  for (int i = 0; i < 3; i++)
-    order(tree, 0, i);
+  int ret = INT_MIN;
+  for (int i = 0; i < empty.size() - 2; i++)
+  {
+    for (int j = i + 1; j < empty.size() - 1; j++)
+    {
+      for (int k = j + 1; k < empty.size(); k++)
+      {
+        auto mp = _map;
+        mp_assign(mp, empty, i);
+        mp_assign(mp, empty, j);
+        mp_assign(mp, empty, k);
+        ret = max(ret, bfs(N, M, mp, virus));
+      }
+    }
+  }
+
+  cout << ret << endl;
   return 0;
 }
