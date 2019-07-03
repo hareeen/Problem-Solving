@@ -24,84 +24,53 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-class matrix
-{
-public:
-  vector<vector<i64>> Matrix;
-  matrix(int N, int M)
-  {
-    Matrix.resize(N, vector<i64>(M));
-  }
-  matrix(vector<vector<i64>> _mat)
-  {
-    this->Matrix = _mat;
-  }
-  void print()
-  {
-    for (auto i : Matrix)
-    {
-      for (auto j : i)
-      {
-        printf("%lld ", j);
-      }
-      printf("\n");
-    }
-  }
-  i64 get(int n, int m) {
-    if(n>=0 && n<this->Matrix.size() && m>=0 && m<this->Matrix[0].size()) return this->Matrix[n][m];
-    else throw;
-  }
-  matrix operator*(const matrix &rhs);
-  matrix &operator=(const matrix &rhs);
-};
-
-matrix matrix::operator*(const matrix &rhs)
-{
-  matrix result = matrix(this->Matrix.size(), rhs.Matrix[0].size());
-  for (int i = 0; i < this->Matrix.size(); i++)
-  {
-    for (int j = 0; j < rhs.Matrix[0].size(); j++)
-    {
-      for (int k = 0; k < rhs.Matrix.size(); k++)
-      {
-        result.Matrix[i][j] += (this->Matrix[i][k] * rhs.Matrix[k][j]);
-        // result.Matrix[i][j] %= MOD;
-      }
-    }
-  }
-  return result;
-}
-
-matrix &matrix::operator=(const matrix &rhs)
-{
-  this->Matrix = rhs.Matrix;
-  return *this;
-}
-
 int main()
 {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int M;
-  cin >> M;
+  int N, r1, r2;
+  cin >> N >> r1 >> r2;
+  r1--;
+  r2--;
+  vector<bool> visited(N);
+  vector<vector<pi>> adjL(N);
+  visited[r1] = true;
+  for (int i = 0; i < N - 1; i++)
+  {
+    int u, v, w;
+    cin >> u >> v >> w;
+    u--;
+    v--;
+    adjL[u].push_back(pi(v, w));
+    adjL[v].push_back(pi(u, w));
+  }
+  queue<ti> que;
+  que.push(ti(r1, 0, 0));
+  while (true)
+  {
+    auto cur = que.front();
+    int cur_vertex = get<0>(cur);
+    int cur_weight = get<1>(cur);
+    int cur_weight_max = get<2>(cur);
 
-  vector<matrix> MatL;
-  vector<vector<i64>> mat;
-  
-  mat.resize(1);
-  mat[0].push_back(8);
-  mat[0].push_back(6);
-  matrix initial(mat);
-  
-  mat.resize(2);
-  mat[0].push_back(1);
-  mat[0].push_back(1);
-  mat[1].push_back(1);
-  mat[1].push_back(0);
-  MatL.push_back(matrix(mat));
+    que.pop();
 
-  
+    if (cur_vertex == r2)
+    {
+      cout << cur_weight - cur_weight_max << endl;
+      break;
+    }
+
+    for (auto [vertex, weight] : adjL[cur_vertex])
+    {
+      if (!visited[vertex])
+      {
+        visited[vertex] = true;
+        que.push(ti(vertex, cur_weight + weight, max(cur_weight_max, weight)));
+      }
+    }
+  }
   return 0;
 }
