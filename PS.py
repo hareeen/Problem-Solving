@@ -1,11 +1,14 @@
-l=[]
-m=-999999
-id=-1
-for i in range(9):
-    l.append(int(input()))
-for el in enumerate(l):
-    if m<el[1]:
-        m=el[1]
-        id=el[0]+1
-print(m)
-print(id)
+l = [6, 14, 20, 34, 54, 88, 142, 230, 372, 602, 974, 1576, 2550, 4126, 6676, 10802, 17478, 28280, 45758, 74038, 119796, 193834, 313630, 507464, 821094, 1328558,
+     2149652, 3478210, 5627862, 9106072, 14733934, 23840006, 38573940, 62413946, 100987886, 163401832, 264389718, 427791550, 692181268, 1119972818, 1812154086, 2932126904]
+
+
+def solve(N):
+    if N <= 14:
+        return ' Messi Gimossi '[N]
+    for idx, val in enumerate(l):
+        if N <= val:
+            return solve(N-l[idx-1])
+
+
+ans = solve(int(input()))
+print('Messi Messi Gimossi' if ans == ' ' else ans)
