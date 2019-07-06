@@ -34,26 +34,21 @@ int main()
 
   int N, M;
   cin >> N >> M;
-  deque<int> deq;
-  for (int i = 0; i < N; i++)
-    deq.push_back(i + 1);
-  int ret = 0;
+  vector<int> six, one;
   for (int i = 0; i < M; i++)
   {
-    int target;
-    cin >> target;
-    int _s = 0;
-    while (deq.front() != target)
-    {
-      _s++;
-      int tmp = deq.front();
-      deq.pop_front();
-      deq.push_back(tmp);
-    }
-    ret += min(_s, static_cast<int>(deq.size()) - _s);
-    deq.pop_front();
+    int a, b;
+    cin >> a >> b;
+    six.push_back(a);
+    one.push_back(b);
   }
-  cout << ret << endl;
-  
+
+  int ms = *min_element(M_iterall(six));
+  int os = *min_element(M_iterall(one));
+  vector<int> ret;
+  for (int i = 0; i < 6; i++)
+    ret.push_back((N + i) / 6 * min(ms, os * 6) + (N + i) % 6 * os);
+  cout << *min_element(M_iterall(ret)) << endl;
+
   return 0;
 }
