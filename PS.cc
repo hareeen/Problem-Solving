@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <deque>
 #include <stack>
 #include <list>
 #include <tuple>
@@ -31,24 +32,28 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  int M;
-  unordered_set<int> s;
-  cin>>N;
+  int N, M;
+  cin >> N >> M;
+  deque<int> deq;
   for (int i = 0; i < N; i++)
-  {
-    int a;
-    cin >> a;
-    s.insert(a);
-  }
-  cin>>M;
+    deq.push_back(i + 1);
+  int ret = 0;
   for (int i = 0; i < M; i++)
   {
-    int a;
-    cin >> a;
-    cout << (s.find(a) != s.end()) << " ";
+    int target;
+    cin >> target;
+    int _s = 0;
+    while (deq.front() != target)
+    {
+      _s++;
+      int tmp = deq.front();
+      deq.pop_front();
+      deq.push_back(tmp);
+    }
+    ret += min(_s, static_cast<int>(deq.size()) - _s);
+    deq.pop_front();
   }
-  cout << endl;
-
+  cout << ret << endl;
+  
   return 0;
 }
