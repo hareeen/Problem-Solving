@@ -32,23 +32,55 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
-  vector<int> six, one;
-  for (int i = 0; i < M; i++)
+  int N, K;
+  string s;
+  cin >> N >> K;
+  cin >> s;
+
+  vector<pi> num_l;
+  for (int i = 0; i < N; i++)
+    num_l.push_back(pi(static_cast<int>(s[i] - '0'), -i));
+  sort(M_iterall(num_l), greater<pi>());
+
+  for (int i = 0; i < N; i++)
+    num_l[i].second = -num_l[i].second;
+  num_l.push_back(pi(0, N));
+
+  vector<bool> check(N);
+  int cur_pos = 0;
+  while (true)
   {
-    int a, b;
-    cin >> a >> b;
-    six.push_back(a);
-    one.push_back(b);
+    if (cur_pos == N)
+    {
+      for (int i = 0; i < K; i++)
+        check[N - i - 1] = true;
+      break;
+    }
+    if (K == 0)
+      break;
+    for (int i = 0; i <= N; i++)
+    {
+      if (cur_pos == num_l[i].second)
+      {
+        cur_pos++;
+        break;
+      }
+      if (num_l[i].second > cur_pos && num_l[i].second - cur_pos <= K)
+      {
+        K -= (num_l[i].second - cur_pos);
+        for (; cur_pos < num_l[i].second; cur_pos++)
+          check[cur_pos] = true;
+        cur_pos++;
+        // cout << cur_pos << " " << K << endl;
+        break;
+      }
+    }
   }
 
-  int ms = *min_element(M_iterall(six));
-  int os = *min_element(M_iterall(one));
-  vector<int> ret;
-  for (int i = 0; i < 6; i++)
-    ret.push_back((N + i) / 6 * min(ms, os * 6) + (N + i) % 6 * os);
-  cout << *min_element(M_iterall(ret)) << endl;
+  for (int i = 0; i < N; i++)
+    if (!check[i])
+      cout << s[i];
+  cout << endl;
 
   return 0;
 }
