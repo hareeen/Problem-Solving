@@ -28,37 +28,42 @@ using tli = tuple<i64, i64, i64>;
 
 using pii = pair<pi, int>;
 
-int process()
+int operation(int n, char mode)
 {
-  int s;
-  pi init, dest;
-  cin >> s;
-  cin >> init.first >> init.second;
-  cin >> dest.first >> dest.second;
-  queue<pii> que;
+  if (mode == 'D')
+    return (n * 2) % 10000;
+  if (mode == 'S')
+    return n == 0 ? 9999 : n - 1;
+  if (mode == 'L')
+    return (n % 1000) * 10 + n / 1000;
+  if (mode == 'R')
+    return (n % 10) * 1000 + n / 10;
+  throw;
+}
 
-  int dx[8] = {2, 2, 1, 1, -1, -1, -2, -2};
-  int dy[8] = {1, -1, 2, -2, 2, -2, 1, -1};
-  vector<vector<bool>> visit(s, vector<bool>(s));
+string process()
+{
+  vector<bool> visit(10000);
+  int init, dest;
+  cin >> init >> dest;
 
-  visit[init.first][init.second] = true;
-  que.push(pii(init, 0));
+  char cmdlist[4] = {'D', 'S', 'L', 'R'};
+  queue<pair<int, string>> que;
+  que.push(make_pair(init, ""));
+  visit[init] = true;
+
   while (!que.empty())
   {
-    auto cur = que.front().first;
-    auto cur_T = que.front().second;
-    if (cur == dest)
-      return cur_T;
+    auto num = que.front().first;
+    auto cmd = que.front().second;
     que.pop();
-    for (int i = 0; i < 8; i++)
+    if (num == dest)
+      return cmd;
+    for (int i = 0; i < 4; i++)
     {
-      int next_x = cur.first + dx[i];
-      int next_y = cur.second + dy[i];
-      if (0 <= next_x && next_x < s && 0 <= next_y && next_y < s && !visit[next_x][next_y])
-      {
-        visit[next_x][next_y] = true;
-        que.push(pii(pi(next_x, next_y), cur_T + 1));
-      }
+      int opr_res = operation(num, cmdlist[i]);
+      if (!visit[opr_res])
+        visit[opr_res] = true, que.push(make_pair(opr_res, cmd + cmdlist[i]));
     }
   }
 }
@@ -69,12 +74,11 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int TC;
-  cin >> TC;
-  for (int tc = 0; tc < TC; tc++)
+  int K;
+  cin >> K;
+  for (int i = 0; i < K; i++)
   {
     cout << process() << '\n';
   }
-
   return 0;
 }
