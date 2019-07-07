@@ -26,15 +26,40 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-void que_append(pi apd_deco, int apd_clr, int &N, vector<vector<int>> &mp, vector<vector<bool>> &check, queue<pi> &que)
+using pii = pair<pi, int>;
+
+int process()
 {
-  if (apd_deco.first >= 0 && apd_deco.first < N &&
-      apd_deco.second >= 0 && apd_deco.second < N &&
-      !check[apd_deco.first][apd_deco.second])
+  int s;
+  pi init, dest;
+  cin >> s;
+  cin >> init.first >> init.second;
+  cin >> dest.first >> dest.second;
+  queue<pii> que;
+
+  int dx[8] = {2, 2, 1, 1, -1, -1, -2, -2};
+  int dy[8] = {1, -1, 2, -2, 2, -2, 1, -1};
+  vector<vector<bool>> visit(s, vector<bool>(s));
+
+  visit[init.first][init.second] = true;
+  que.push(pii(init, 0));
+  while (!que.empty())
   {
-    que.push(apd_deco);
-    mp[apd_deco.first][apd_deco.second] = apd_clr;
-    check[apd_deco.first][apd_deco.second] = true;
+    auto cur = que.front().first;
+    auto cur_T = que.front().second;
+    if (cur == dest)
+      return cur_T;
+    que.pop();
+    for (int i = 0; i < 8; i++)
+    {
+      int next_x = cur.first + dx[i];
+      int next_y = cur.second + dy[i];
+      if (0 <= next_x && next_x < s && 0 <= next_y && next_y < s && !visit[next_x][next_y])
+      {
+        visit[next_x][next_y] = true;
+        que.push(pii(pi(next_x, next_y), cur_T + 1));
+      }
+    }
   }
 }
 
@@ -44,120 +69,12 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
-  vector<vector<int>> mp(N), mpg(N), mpr(N), mpb(N);
-  vector<vector<bool>> check(N), checkb(N), checkg(N), checkr(N);
-  queue<pi> que;
-  for (int i = 0; i < N; i++)
+  int TC;
+  cin >> TC;
+  for (int tc = 0; tc < TC; tc++)
   {
-    string s;
-    cin >> s;
-    for (auto &j : s)
-    {
-      mp[i].push_back(static_cast<int>(j != 'B'));
-      mpg[i].push_back(static_cast<int>(j == 'G'));
-      mpr[i].push_back(static_cast<int>(j == 'R'));
-      mpb[i].push_back(static_cast<int>(j == 'B'));
-      check[i].push_back((j == 'B'));
-      checkg[i].push_back((j != 'G'));
-      checkr[i].push_back((j != 'R'));
-      checkb[i].push_back((j != 'B'));
-    }
+    cout << process() << '\n';
   }
-
-  int apd_clr2 = 1;
-  int dx[4] = {0, 0, 1, -1};
-  int dy[4] = {1, -1, 0, 0};
-
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      if (!checkb[i][j])
-      {
-        que = queue<pi>();
-        que_append(pi(i, j), apd_clr2, N, mpb, checkb, que);
-        while (!que.empty())
-        {
-          auto cur = que.front();
-          que.pop();
-          for (int k = 0; k < 4; k++)
-            que_append(pi(cur.first + dx[k], cur.second + dy[k]), apd_clr2, N, mpb, checkb, que);
-        }
-        apd_clr2++;
-      }
-    }
-  }
-
-  int apd_clr1 = 1;
-  que = queue<pi>();
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      if (!checkg[i][j])
-      {
-        que = queue<pi>();
-        que_append(pi(i, j), apd_clr1, N, mpg, checkg, que);
-        while (!que.empty())
-        {
-          auto cur = que.front();
-          que.pop();
-          for (int k = 0; k < 4; k++)
-            que_append(pi(cur.first + dx[k], cur.second + dy[k]), apd_clr1, N, mpg, checkg, que);
-        }
-        apd_clr1++;
-      }
-    }
-  }
-
-  que = queue<pi>();
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      if (!checkr[i][j])
-      {
-        que = queue<pi>();
-        que_append(pi(i, j), apd_clr1, N, mpr, checkr, que);
-        while (!que.empty())
-        {
-          auto cur = que.front();
-          que.pop();
-          for (int k = 0; k < 4; k++)
-            que_append(pi(cur.first + dx[k], cur.second + dy[k]), apd_clr1, N, mpr, checkr, que);
-        }
-        apd_clr1++;
-      }
-    }
-  }
-
-  cout << apd_clr1 - 1 + apd_clr2 - 1 << " ";
-
-  int apd_clr = 1;
-  que = queue<pi>();
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      if (!check[i][j])
-      {
-        que = queue<pi>();
-        que_append(pi(i, j), apd_clr, N, mp, check, que);
-        while (!que.empty())
-        {
-          auto cur = que.front();
-          que.pop();
-          for (int k = 0; k < 4; k++)
-            que_append(pi(cur.first + dx[k], cur.second + dy[k]), apd_clr, N, mp, check, que);
-        }
-        apd_clr++;
-      }
-    }
-  }
-  cout << apd_clr - 1 + apd_clr2 - 1 << " ";
-  cout << endl;
 
   return 0;
 }
