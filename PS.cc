@@ -32,23 +32,54 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int K;
-  stack<int> stk;
-  cin >> K;
-  for (int i = 0; i < K; i++)
+  string s;
+  cin >> s;
+  stack<char> stk1, stk2;
+  for (char el : s)
+    stk1.push(el);
+
+  int N;
+  cin >> N;
+  for (int i = 0; i < N; i++)
   {
-    int a;
-    cin >> a;
-    if (a == 0)
-      stk.pop();
-    else
-      stk.push(a);
+    char mode;
+    cin >> mode;
+    switch (mode)
+    {
+    case 'L':
+      if(!stk1.empty()) {
+        stk2.push(stk1.top());
+        stk1.pop();
+      }
+      break;
+
+    case 'D':
+      if(!stk2.empty()) {
+        stk1.push(stk2.top());
+        stk2.pop();
+      }
+      break;
+
+    case 'B':
+      if(!stk1.empty()) stk1.pop();
+      break;
+
+    case 'P':
+      char c;
+      cin >> c;
+      stk1.push(c);
+      break;
+
+    default:
+      break;
+    }
   }
 
-  int _s = 0;
-  while (!stk.empty())
-    _s += stk.top(), stk.pop();
-  cout << _s << endl;
+  string outp;
+  while(!stk1.empty()) outp.push_back(stk1.top()),stk1.pop();
+  reverse(M_iterall(outp));
+  while(!stk2.empty()) outp.push_back(stk2.top()),stk2.pop();
+  cout<<outp<<endl;
 
   return 0;
 }
