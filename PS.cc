@@ -32,57 +32,24 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
-
-  vector<bool> arr(N + 1, true);
-  for (int i = 0; i < M; i++)
+  int N;
+  cin >> N;
+  vector<int> arr;
+  for (int i = 0; i < N; i++)
   {
     int t;
     cin >> t;
-    arr[t] = false;
+    arr.push_back(t);
   }
 
-  vector<vector<vector<int>>> dp(N + 1, vector<vector<int>>(N + 1, vector<int>(3, INT_MAX / 2)));
-  dp[0][0][0] = 0;
-  for (int i = 1; i <= N; i++)
-  {
-    for (int j = 0; j <= N; j++)
-    {
-      vector<int> possible0, possible1, possible2;
-      possible0.push_back(INT_MAX / 2);
-      possible1.push_back(INT_MAX / 2);
-      possible2.push_back(INT_MAX / 2);
-
-      if (arr[i])
-      {
-        if (j <= N - 3)
-          possible0.push_back(*min_element(iterall(dp[i - 1][j + 3])));
-        possible0.push_back(*min_element(iterall(dp[i - 1][j])) + 10);
-      }
-      if (!arr[i])
-        possible0.push_back(*min_element(iterall(dp[i - 1][j])));
-      dp[i][j][0] = *min_element(iterall(possible0));
-
-      if (i >= 3 && j >= 1)
-        possible1.push_back(*min_element(iterall(dp[i - 3][j - 1])) + 25);
-      if (!arr[i])
-        possible1.push_back(*min_element(iterall(dp[i - 1][j])));
-      dp[i][j][1] = *min_element(iterall(possible1));
-
-      if (i >= 5 && j >= 2)
-        possible2.push_back(*min_element(iterall(dp[i - 5][j - 2])) + 37);
-      if (!arr[i])
-        possible2.push_back(*min_element(iterall(dp[i - 1][j])));
-      dp[i][j][2] = *min_element(iterall(possible2));
-    }
-  }
-
-  int res = INT_MAX;
-  for (int i = 0; i <= N; i++)
-    for (int j = 0; j < 3; j++)
-      res = min(res, dp.back()[i][j]);
-  cout << res * 1000 << endl;
-
+  vector<int> dp(N, INT_MAX / 2);
+  dp[0] = 0;
+  for (int i = 0; i < N; i++)
+    for (int j = i + 1; j <= min(N - 1, i + arr[i]); j++)
+      dp[j] = min(dp[j], dp[i] + 1);
+  if (dp.back() >= INT_MAX / 2)
+    cout << -1 << endl;
+  else
+    cout << dp.back() << endl;
   return 0;
 }
