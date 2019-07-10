@@ -32,8 +32,8 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
+  int N, K;
+  cin >> N >> K;
   vector<int> arr;
   for (int i = 0; i < N; i++)
   {
@@ -42,14 +42,17 @@ int main()
     arr.push_back(t);
   }
 
-  vector<int> dp(N, INT_MAX / 2);
+  vector<int> dp(K + 1, INT_MAX / 2);
   dp[0] = 0;
-  for (int i = 0; i < N; i++)
-    for (int j = i + 1; j <= min(N - 1, i + arr[i]); j++)
-      dp[j] = min(dp[j], dp[i] + 1);
+  for (int i = 0; i < K; i++)
+    for (int j = 0; j < N; j++)
+      for (int k = i + arr[j]; k <= K; k += arr[j])
+        dp[k] = min(dp[k], dp[i] + (k - i) / arr[j]);
+
   if (dp.back() >= INT_MAX / 2)
     cout << -1 << endl;
   else
     cout << dp.back() << endl;
+
   return 0;
 }
