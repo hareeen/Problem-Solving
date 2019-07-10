@@ -26,82 +26,63 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-int ufFind(vector<int> &parent, int n)
-{
-  if (parent[n] == n)
-    return n;
-  else
-    return parent[n] = ufFind(parent, parent[n]);
-}
-
-void ufUnion(vector<int> &parent, int u, int v)
-{
-  parent[ufFind(parent, u)] = ufFind(parent, v);
-  return;
-}
-
 int main()
 {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, Q;
-  cin >> N >> Q;
+  int N, M;
+  cin >> N >> M;
 
-  vector<int> parent_final(1), parent(1);
-  for (int i = 0; i < N - 1; i++)
+  vector<bool> arr(N + 1, true);
+  for (int i = 0; i < M; i++)
   {
     int t;
     cin >> t;
-    parent_final.push_back(--t);
-    parent.push_back(i + 1);
+    arr[t] = false;
   }
 
-  vector<pi> query1;
-  vector<pair<int, pi>> query2;
-  for (int i = 0; i < N + Q - 1; i++)
+  vector<vector<vector<int>>> dp(N + 1, vector<vector<int>>(N + 1, vector<int>(3, INT_MAX / 2)));
+  dp[0][0][0] = 0;
+  for (int i = 1; i <= N; i++)
   {
-    int x;
-    cin >> x;
-    if (x == 0)
+    for (int j = 0; j <= N; j++)
     {
-      int b;
-      cin >> b;
-      query1.push_back(pi(i, --b));
-    }
-    else
-    {
-      int c, d;
-      cin >> c >> d;
-      query2.push_back(make_pair(i, pi(--c, --d)));
-    }
-  }
+      vector<int> possible0, possible1, possible2;
+      possible0.push_back(INT_MAX / 2);
+      possible1.push_back(INT_MAX / 2);
+      possible2.push_back(INT_MAX / 2);
 
-  reverse(iterall(query1));
-  reverse(iterall(query2));
+      if (arr[i])
+      {
+        if (j <= N - 3)
+          possible0.push_back(*min_element(iterall(dp[i - 1][j + 3])));
+        possible0.push_back(*min_element(iterall(dp[i - 1][j])) + 10);
+      }
+      if (!arr[i])
+        possible0.push_back(*min_element(iterall(dp[i - 1][j])));
+      dp[i][j][0] = *min_element(iterall(possible0));
 
-  vector<bool> result;
-  auto iter1 = query1.begin();
-  auto iter2 = query2.begin();
-  for (int i = N + Q - 2; i >= 0; i--)
-  {
-    if (iter1 != query1.end() && (*iter1).first == i)
-    {
-      ufUnion(parent, (*iter1).second, parent_final[(*iter1).second]);
-      iter1++;
-    }
-    else
-    {
-      result.push_back(ufFind(parent, (*iter2).second.first) == ufFind(parent, (*iter2).second.second));
-      iter2++;
+      if (i >= 3 && j >= 1)
+        possible1.push_back(*min_element(iterall(dp[i - 3][j - 1])) + 25);
+      if (!arr[i])
+        possible1.push_back(*min_element(iterall(dp[i - 1][j])));
+      dp[i][j][1] = *min_element(iterall(possible1));
+
+      if (i >= 5 && j >= 2)
+        possible2.push_back(*min_element(iterall(dp[i - 5][j - 2])) + 37);
+      if (!arr[i])
+        possible2.push_back(*min_element(iterall(dp[i - 1][j])));
+      dp[i][j][2] = *min_element(iterall(possible2));
     }
   }
 
-  reverse(iterall(result));
-
-  for (const auto &el : result)
-    cout << (el ? "YES" : "NO") << '\n';
+  int res = INT_MAX;
+  for (int i = 0; i <= N; i++)
+    for (int j = 0; j < 3; j++)
+      res = min(res, dp.back()[i][j]);
+  cout << res * 1000 << endl;
 
   return 0;
 }
