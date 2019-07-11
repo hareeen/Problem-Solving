@@ -35,34 +35,21 @@ int main()
   int N;
   cin >> N;
 
-  vector<vector<int>> arr(4);
+  priority_queue<int> pq;
   for (int i = 0; i < N; i++)
   {
-    int a, b, c, d;
-    cin >> a >> b >> c >> d;
-    arr[0].push_back(a);
-    arr[1].push_back(b);
-    arr[2].push_back(c);
-    arr[3].push_back(d);
+    int t;
+    cin >> t;
+    if (t == 0)
+    {
+      if (!pq.empty())
+        cout << pq.top() << '\n', pq.pop();
+      else
+        cout << 0 << '\n';
+    }
+    else
+      pq.push(t);
   }
-
-  vector<int> leftArr, rightArr;
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-      leftArr.push_back(arr[0][i] + arr[1][j]);
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-      rightArr.push_back(arr[2][i] + arr[3][j]);
-  sort(iterall(rightArr));
-
-  i64 res = 0;
-  for (const int &el : leftArr)
-  {
-    auto bsearch = equal_range(iterall(rightArr), -el);
-    res += distance(bsearch.first, bsearch.second);
-  }
-
-  cout << res << endl;
 
   return 0;
 }
