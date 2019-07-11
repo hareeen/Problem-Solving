@@ -26,15 +26,13 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-template <class T>
-class myset : public unordered_set<T>
+i64 calc_treeh(vector<int> &arr, int n)
 {
-public:
-  bool contains(T element)
-  {
-    return this->find(element) != this->end();
-  }
-};
+  i64 s = 0;
+  for (const auto &el : arr)
+    s += max(0, el - n);
+  return s;
+}
 
 int main()
 {
@@ -42,51 +40,32 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
+  i64 N, M;
+  cin >> N >> M;
 
-  myset<int> s;
+  vector<int> arr;
   for (int i = 0; i < N; i++)
   {
-    string command;
-    cin >> command;
+    int t;
+    cin >> t;
+    arr.push_back(t);
+  }
 
-    if (command == "add")
-    {
-      int t;
-      cin >> t;
-      s.insert(t);
-    }
-    if (command == "remove")
-    {
-      int t;
-      cin >> t;
-      if (s.contains(t))
-        s.erase(t);
-    }
-    if (command == "check")
-    {
-      int t;
-      cin >> t;
-      cout << static_cast<int>(s.contains(t)) << '\n';
-    }
-    if (command == "toggle")
-    {
-      int t;
-      cin >> t;
-      if (s.contains(t))
-        s.erase(t);
-      else
-        s.insert(t);
-    }
-    if (command == "all")
-    {
-      for (int i = 1; i <= 20; i++)
-        s.insert(i);
-    }
-    if (command == "empty")
-    {
-      s.clear();
+  int l = 0, r = INT_MAX;
+  while (l < r)
+  {
+    int mid = (l + r) / 2;
+    i64 res = calc_treeh(arr, mid);
+    if (res <= M)
+      r = mid;
+    else
+      l = mid + 1;
+  }
+
+  for(int i=l+1;i>=l-1;i--) {
+    if(calc_treeh(arr, i)>=M) {
+      cout<<i<<endl;
+      break;
     }
   }
 
