@@ -26,6 +26,16 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+template <class T>
+class myset : public unordered_set<T>
+{
+public:
+  bool contains(T element)
+  {
+    return this->find(element) != this->end();
+  }
+};
+
 int main()
 {
   ios_base::sync_with_stdio(false);
@@ -35,20 +45,49 @@ int main()
   int N;
   cin >> N;
 
-  priority_queue<int> pq;
+  myset<int> s;
   for (int i = 0; i < N; i++)
   {
-    int t;
-    cin >> t;
-    if (t == 0)
+    string command;
+    cin >> command;
+
+    if (command == "add")
     {
-      if (!pq.empty())
-        cout << pq.top() << '\n', pq.pop();
-      else
-        cout << 0 << '\n';
+      int t;
+      cin >> t;
+      s.insert(t);
     }
-    else
-      pq.push(t);
+    if (command == "remove")
+    {
+      int t;
+      cin >> t;
+      if (s.contains(t))
+        s.erase(t);
+    }
+    if (command == "check")
+    {
+      int t;
+      cin >> t;
+      cout << static_cast<int>(s.contains(t)) << '\n';
+    }
+    if (command == "toggle")
+    {
+      int t;
+      cin >> t;
+      if (s.contains(t))
+        s.erase(t);
+      else
+        s.insert(t);
+    }
+    if (command == "all")
+    {
+      for (int i = 1; i <= 20; i++)
+        s.insert(i);
+    }
+    if (command == "empty")
+    {
+      s.clear();
+    }
   }
 
   return 0;
