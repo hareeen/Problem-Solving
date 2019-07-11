@@ -32,72 +32,56 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
-  vector<int> rk1(N), rk2(N);
-  for (int i = 0; i < M; i++)
-  {
-    int u, v;
-    cin >> u >> v;
-    rk1[u - 1]++;
-    rk2[v - 1]++;
-  }
+  int T, W;
+  cin >> T >> W;
 
-  list<int> ls;
-  for (int i = 1; i <= N; i++)
-    ls.push_back(i);
-
-  vector<int> print1;
-  for (int i = 0; i < N; i++)
+  int cur_t = 0;
+  int streak = 0;
+  vector<int> arr(1);
+  for (int i = 0; i < T; i++)
   {
-    auto iter = ls.begin();
-    for (int j = 0; j < rk1[i]; j++)
+    int t;
+    cin >> t;
+    t--;
+    if (t == cur_t)
+      streak++;
+    else
     {
-      iter++;
-      if (iter == ls.end())
+      arr.push_back(streak);
+      streak = 1;
+      cur_t = t;
+    }
+  }
+  if (streak != 0)
+    arr.push_back(streak);
+
+  int dp[1002][31][2] = {0};
+  for (int i = 1; i <= arr.size() - 1; i++)
+  {
+    for (int j = 0; j <= W; j++)
+    {
+      if (j == 0)
+        dp[i][j][0] = dp[i - 1][j][0] + (i % 2 == 1 ? arr[i] : 0);
+      else
       {
-        cout << -1 << endl;
-        return 0;
+        if (j % 2 == 0)
+          dp[i][j][0] = max(dp[i - 1][j][0], dp[i - 1][j - 1][1]) + (i % 2 == 1 ? arr[i] : 0);
+        else
+          dp[i][j][1] = max(dp[i - 1][j][1], dp[i - 1][j - 1][0]) + (i % 2 == 0 ? arr[i] : 0);
       }
+      // cout << i << " " << j << " " << dp[i][j][0] << " " << dp[i][j][1] << endl;
     }
-    print1.push_back(*iter);
-    ls.erase(iter);
   }
 
-  for (int i = N; i >= 1; i--)
-    ls.push_back(i);
-
-  vector<int> print2;
-  for (int i = N - 1; i >= 0; i--)
+  int res = INT_MIN;
+  for (int i = 0; i <= W; i++)
   {
-    auto iter = ls.begin();
-    for (int j = 0; j < rk2[i]; j++)
+    for (int j = 0; j < 2; j++)
     {
-      iter++;
-      if (iter == ls.end())
-      {
-        cout << -1 << endl;
-        return 0;
-      }
-    }
-    print2.push_back(*iter);
-    ls.erase(iter);
-  }
-
-  reverse(iterall(print2));
-
-  for (int i = 0; i < N; i++)
-  {
-    if (print1[i] != print2[i])
-    {
-      cout << -1 << endl;
-      return 0;
+      res = max(res, dp[arr.size() - 1][i][j]);
     }
   }
-
-  for (const auto &el : print1)
-    cout << el << " ";
-  cout << endl;
+  cout << res << endl;
 
   return 0;
 }
