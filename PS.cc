@@ -32,55 +32,36 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int T, W;
-  cin >> T >> W;
+  int N;
+  cin >> N;
 
-  int cur_t = 0;
-  int streak = 0;
-  vector<int> arr(1);
-  for (int i = 0; i < T; i++)
+  vector<vector<int>> arr(4);
+  for (int i = 0; i < N; i++)
   {
-    int t;
-    cin >> t;
-    t--;
-    if (t == cur_t)
-      streak++;
-    else
-    {
-      arr.push_back(streak);
-      streak = 1;
-      cur_t = t;
-    }
-  }
-  if (streak != 0)
-    arr.push_back(streak);
-
-  int dp[1002][31][2] = {0};
-  for (int i = 1; i <= arr.size() - 1; i++)
-  {
-    for (int j = 0; j <= W; j++)
-    {
-      if (j == 0)
-        dp[i][j][0] = dp[i - 1][j][0] + (i % 2 == 1 ? arr[i] : 0);
-      else
-      {
-        if (j % 2 == 0)
-          dp[i][j][0] = max(dp[i - 1][j][0], dp[i - 1][j - 1][1]) + (i % 2 == 1 ? arr[i] : 0);
-        else
-          dp[i][j][1] = max(dp[i - 1][j][1], dp[i - 1][j - 1][0]) + (i % 2 == 0 ? arr[i] : 0);
-      }
-      // cout << i << " " << j << " " << dp[i][j][0] << " " << dp[i][j][1] << endl;
-    }
+    int a, b, c, d;
+    cin >> a >> b >> c >> d;
+    arr[0].push_back(a);
+    arr[1].push_back(b);
+    arr[2].push_back(c);
+    arr[3].push_back(d);
   }
 
-  int res = INT_MIN;
-  for (int i = 0; i <= W; i++)
+  vector<int> leftArr, rightArr;
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+      leftArr.push_back(arr[0][i] + arr[1][j]);
+  for (int i = 0; i < N; i++)
+    for (int j = 0; j < N; j++)
+      rightArr.push_back(arr[2][i] + arr[3][j]);
+  sort(iterall(rightArr));
+
+  i64 res = 0;
+  for (const int &el : leftArr)
   {
-    for (int j = 0; j < 2; j++)
-    {
-      res = max(res, dp[arr.size() - 1][i][j]);
-    }
+    auto bsearch = equal_range(iterall(rightArr), -el);
+    res += distance(bsearch.first, bsearch.second);
   }
+
   cout << res << endl;
 
   return 0;
