@@ -1,6 +1,16 @@
-l = [1, 1]
-g = list(map(int, list(input())))
-for i in range(len(g)):
-    l.append(((l[-1] if g[i] != 0 else 0) +
-              (l[-2] if i > 0 and g[i-1] != 0 and g[i-1]*10+g[i] <= 26 else 0)) % 1000000)
-print(l[-1])
+def fact(n: int):
+    mul = 1
+    for i in range(n):
+        mul *= (i+1)
+    return mul
+
+
+def nCr(n: int, r: int):
+    return fact(n)//fact(r)//fact(n-r)
+
+
+ans = 0
+n, k = map(int, input().split())
+for i in range(k+1):
+    ans += ((-1)**(i))*nCr(k, i)*((10-i)**n)
+print(ans)
