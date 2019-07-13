@@ -26,28 +26,24 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-int solve(vector<vector<int>> &inc, vector<vector<int>> &early, int node, int lastNode, int status)
+int bit[17] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536};
+int solve(const int &N, vector<vector<int>> &inc, vector<vector<int>> &dp, int length, int stateBit, int node)
 {
-  if (lastNode != -1 && inc[node].size() == 1)
-    return status;
-  if (early[node][status] != -1)
-    return early[node][status];
+  if (length == N - 1)
+    return inc[node][0] == 0 ? INT_MAX / 2 : inc[node][0];
+  if (dp[stateBit][node] != -1)
+    return dp[stateBit][node];
 
-  int ret = status;
-  for (const auto &el : inc[node])
-  {
-    if (el == lastNode)
-      continue;
-    int svFalse = solve(inc, early, el, node, 0);
-    int svTrue = solve(inc, early, el, node, 1);
-    if (status == 0)
-      ret += svTrue;
-    else
-      ret += min(svTrue, svFalse);
-  }
+  int ret = INT_MAX / 2;
+  for (int i = 0; i < N; i++)
+    if ((stateBit & bit[i]) == 0 && inc[node][i] != 0)
+      ret = min(ret, solve(N, inc, dp, length + 1, stateBit + bit[node], i) + inc[node][i]);
 
-  // cout << node << " " << status << " " << ret << endl;
-  return early[node][status] = ret;
+  if (ret >= INT_MAX / 2)
+    return INT_MAX / 2;
+
+  // cout<<stateBit<<" "<<node<<" "<<ret<<endl;
+  return dp[stateBit][node] = ret;
 }
 
 int main()
@@ -59,19 +55,19 @@ int main()
   int N;
   cin >> N;
 
-  vector<vector<int>> inc(N);
-  for (int i = 0; i < N - 1; i++)
+  vector<vector<int>> incMat(N, vector<int>(N));
+  for (int i = 0; i < N; i++)
   {
-    int u, v;
-    cin >> u >> v;
-    u--;
-    v--;
-    inc[u].push_back(v);
-    inc[v].push_back(u);
+    for (int j = 0; j < N; j++)
+    {
+      int t;
+      cin >> t;
+      incMat[i][j] = t;
+    }
   }
 
-  vector<vector<int>> early(N, vector<int>(2, -1));
-  cout << min(solve(inc, early, 0, -1, 0), solve(inc, early, 0, -1, 1)) << endl;
+  vector<vector<int>> dp(bit[N], vector<int>(N, -1));
+  cout << solve(N, incMat, dp, 0, 0, 0) << endl;
 
   return 0;
 }
