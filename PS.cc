@@ -60,33 +60,31 @@ int main()
   int N, M;
   cin >> N >> M;
 
+  priority_queue<pair<int, pi>, deque<pair<int, pi>>, greater<pair<int, pi>>> pq;
+  for (int i = 0; i < M; i++)
+  {
+    int u, v, w;
+    cin >> u >> v >> w;
+    pq.push(make_pair(w, pi(--u, --v)));
+  }
+
   vector<int> parent(N);
   ufInit(parent);
 
-  for (int i = 0; i < N; i++)
+  int cur = 0, ans = 0;
+  while (cur < N - 2)
   {
-    for (int j = 0; j < N; j++)
+    auto edge = pq.top();
+    pq.pop();
+    if (!ufSameset(parent, edge.second.first, edge.second.second))
     {
-      int t;
-      cin >> t;
-      if (i > j && t == 1)
-        ufMerge(parent, i, j);
+      ufMerge(parent, edge.second.first, edge.second.second);
+      cur++;
+      ans += edge.first;
     }
   }
 
-  bool ret = true;
-  int lst, cur;
-  cin >> lst;
-  lst--;
-  for (int i = 1; i < M; i++)
-  {
-    cin >> cur;
-    cur--;
-    ret &= ufSameset(parent, lst, cur);
-    lst = cur;
-  }
-
-  cout << (ret ? "YES" : "NO") << endl;
+  cout << ans << endl;
 
   return 0;
 }
