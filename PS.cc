@@ -26,29 +26,30 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-void ufInit(vector<int> &par)
+vector<int> dijkstra(vector<vector<pi>> &inc, int sNode)
 {
-  for (int i = 0; i < par.size(); i++)
-    par[i] = i;
-  return;
-}
+  priority_queue<pi, deque<pi>, greater<pi>> pq;
+  vector<int> dist(inc.size(), INT_MAX / 4);
 
-int ufFind(vector<int> &par, int vtx)
-{
-  if (par[vtx] == vtx)
-    return vtx;
-  else
-    return par[vtx] = ufFind(par, par[vtx]);
-}
+  dist[sNode] = 0;
+  pq.push(pi(0, sNode));
+  while (!pq.empty())
+  {
+    auto cur = pq.top();
+    pq.pop();
+    if (cur.first > dist[cur.second])
+      continue;
+    for (const auto &[vertex, weight] : inc[cur.second])
+    {
+      if (dist[vertex] > weight + cur.first)
+      {
+        dist[vertex] = weight + cur.first;
+        pq.push(pi(weight + cur.first, vertex));
+      }
+    }
+  }
 
-void ufMerge(vector<int> &par, int u, int v)
-{
-  par[ufFind(par, u)] = ufFind(par, v);
-}
-
-bool ufSameset(vector<int> &par, int u, int v)
-{
-  return ufFind(par, u) == ufFind(par, v);
+  return dist;
 }
 
 int main()
@@ -60,31 +61,30 @@ int main()
   int N, M;
   cin >> N >> M;
 
-  priority_queue<pair<int, pi>, deque<pair<int, pi>>, greater<pair<int, pi>>> pq;
+  vector<vector<pi>> inc(N);
   for (int i = 0; i < M; i++)
   {
     int u, v, w;
     cin >> u >> v >> w;
-    pq.push(make_pair(w, pi(--u, --v)));
+    u--;
+    v--;
+    inc[u].push_back(pi(v, w));
+    inc[v].push_back(pi(u, w));
   }
 
-  vector<int> parent(N);
-  ufInit(parent);
+  int m1, m2;
+  cin >> m1 >> m2;
+  vector<int> dist_s = dijkstra(inc, 0), dist_e = dijkstra(inc, N - 1);
+  int midDist = dijkstra(inc, --m1)[--m2];
+  vector<int> dist;
+  dist.push_back(midDist);
+  dist.push_back(dist_s[m1] + dist_e[m2]);
+  dist.push_back(dist_s[m2] + dist_e[m1]);
 
-  int cur = 0, ans = 0;
-  while (cur < N - 2)
-  {
-    auto edge = pq.top();
-    pq.pop();
-    if (!ufSameset(parent, edge.second.first, edge.second.second))
-    {
-      ufMerge(parent, edge.second.first, edge.second.second);
-      cur++;
-      ans += edge.first;
-    }
-  }
-
-  cout << ans << endl;
+  if (*min_element(iterall(dist)) >= INT_MAX / 4)
+    cout << -1 << endl;
+  else
+    cout << min(dist[1], dist[2]) + dist[0] << endl;
 
   return 0;
 }
