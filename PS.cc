@@ -26,47 +26,28 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-using piv = pair<int, vector<int>>;
-
-auto dijkstra(vector<vector<pi>> &inc, vector<vector<bool>> &check, int sNode)
+int solve(vector<vector<int>> &inc, vector<vector<int>> &early, int node, int lastNode, int status)
 {
-  priority_queue<pi, deque<pi>, greater<pi>> pq;
-  vector<piv> dist(inc.size(), piv(INT_MAX / 4, vector<int>()));
+  if (lastNode != -1 && inc[node].size() == 1)
+    return status;
+  if (early[node][status] != -1)
+    return early[node][status];
 
-  dist[sNode] = piv(0, vector<int>(1, sNode));
-  pq.push(pi(0, sNode));
-  while (!pq.empty())
+  int ret = status;
+  for (const auto &el : inc[node])
   {
-    auto cur = pq.top();
-    pq.pop();
-    if (cur.first > dist[cur.second].first)
+    if (el == lastNode)
       continue;
-    for (const auto &[vertex, weight] : inc[cur.second])
-    {
-      if (dist[vertex].first >= weight + cur.first && check[cur.second][vertex])
-      {
-        if (dist[vertex].first > weight + cur.first)
-          dist[vertex].second.clear();
-        dist[vertex].first = weight + cur.first;
-        dist[vertex].second.push_back(cur.second);
-        pq.push(pi(weight + cur.first, vertex));
-      }
-    }
+    int svFalse = solve(inc, early, el, node, 0);
+    int svTrue = solve(inc, early, el, node, 1);
+    if (status == 0)
+      ret += svTrue;
+    else
+      ret += min(svTrue, svFalse);
   }
 
-  return dist;
-}
-
-void erase_edge(vector<vector<bool>> &check, vector<piv> &dist, int n)
-{
-  if (n == dist[n].second[0])
-    return;
-  for (const auto &el : dist[n].second)
-  {
-    check[el][n] = false;
-    erase_edge(check, dist, el);
-  }
-  return;
+  // cout << node << " " << status << " " << ret << endl;
+  return early[node][status] = ret;
 }
 
 int main()
@@ -75,46 +56,22 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  while (true)
+  int N;
+  cin >> N;
+
+  vector<vector<int>> inc(N);
+  for (int i = 0; i < N - 1; i++)
   {
-    int N, M;
-    cin >> N >> M;
-    if (N + M == 0)
-      break;
-
-    int S, D;
-    cin >> S >> D;
-
-    vector<vector<pi>> inc(N);
-    vector<vector<bool>> check(N, vector<bool>(N, true));
-    for (int i = 0; i < M; i++)
-    {
-      int u, v, w;
-      cin >> u >> v >> w;
-      inc[u].push_back(pi(v, w));
-    }
-
-    int min_dist = -1;
-    while (true)
-    {
-      auto dist = dijkstra(inc, check, S);
-      if (min_dist == -1)
-      {
-        if (dist[D].first >= INT_MAX / 4)
-        {
-          cout << -1 << '\n';
-          break;
-        }
-        min_dist = dist[D].first;
-      }
-      else if (min_dist != dist[D].first)
-      {
-        cout << (dist[D].first >= INT_MAX / 4 ? -1 : dist[D].first) << '\n';
-        break;
-      }
-      erase_edge(check, dist, D);
-    }
+    int u, v;
+    cin >> u >> v;
+    u--;
+    v--;
+    inc[u].push_back(v);
+    inc[v].push_back(u);
   }
+
+  vector<vector<int>> early(N, vector<int>(2, -1));
+  cout << min(solve(inc, early, 0, -1, 0), solve(inc, early, 0, -1, 1)) << endl;
 
   return 0;
 }
