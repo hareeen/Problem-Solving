@@ -26,37 +26,9 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-bool isPossible(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qx, int qy)
+bool comp(const pi &left, const pi &right)
 {
-  return arr1[0][qx] + arr1[1][qy] + arr2[0][N - qx + qy] + arr2[1][qx + qy] == 0;
-}
-
-void updQueen(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qx, int qy, int diff)
-{
-  arr1[0][qx] += diff;
-  arr1[1][qy] += diff;
-  arr2[0][N - qx + qy] += diff;
-  arr2[1][qx + qy] += diff;
-  return;
-}
-
-i64 solve(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qn)
-{
-  if (qn == N)
-    return 1;
-
-  i64 ret = 0;
-  for (int j = 0; j < N; j++)
-  {
-    if (isPossible(N, arr1, arr2, qn, j))
-    {
-      updQueen(N, arr1, arr2, qn, j, 1);
-      ret += solve(N, arr1, arr2, qn + 1);
-      updQueen(N, arr1, arr2, qn, j, -1);
-    }
-  }
-
-  return ret;
+  return left.first <= right.first && left.second <= right.second;
 }
 
 int main()
@@ -68,9 +40,30 @@ int main()
   int N;
   cin >> N;
 
-  auto arr1 = vector<vector<int>>(2, vector<int>(N, 0));
-  auto arr2 = vector<vector<int>>(2, vector<int>(2 * N, 0));
-  cout << solve(N, arr1, arr2, 0) << endl;
+  vector<pi> arr;
+  for (int i = 0; i < N; i++)
+  {
+    int a, b;
+    cin >> a >> b;
+    if (a < b)
+      swap(a, b);
+    arr.push_back(pi(a, b));
+  }
+
+  sort(iterall(arr));
+
+  vector<int> dp(1, 1);
+
+  for (int i = 1; i < N; i++)
+  {
+    int ret = 1;
+    for (int j = 0; j < i; j++)
+      if (arr[j].second <= arr[i].second)
+        ret = max(ret, dp[j] + 1);
+    dp.push_back(ret);
+  }
+
+  cout << *max_element(iterall(dp)) << endl;
 
   return 0;
 }
