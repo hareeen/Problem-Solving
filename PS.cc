@@ -42,24 +42,34 @@ int main()
 
   for (int i = 0; i < M; i++)
   {
-    int u, v, w;
-    cin >> u >> v >> w;
+    int u, v;
+    cin >> u >> v;
     u--;
     v--;
-    inc[u][v] = min(inc[u][v], w);
+    inc[u][v] = -1;
+    inc[v][u] = 1;
   }
 
   for (int i = 0; i < N; i++)
     for (int j = 0; j < N; j++)
       for (int k = 0; k < N; k++)
-        inc[k][j] = min(inc[k][j], inc[k][i] + inc[i][j]);
-
-  for (const auto &vec : inc)
+        if ((inc[k][i] > 0 && inc[i][j] > 0) || (inc[k][i] < 0 && inc[i][j] < 0))
+          inc[k][j] = min(inc[k][j], inc[k][i] + inc[i][j]);
+  
+  int S;
+  cin >> S;
+  for (int i = 0; i < S; i++)
   {
-    for (const auto &el : vec)
-      cout << (el >= INT_MAX / 2 ? 0 : el) << " ";
-    cout << '\n';
-  }
+    int u, v;
+    cin >> u >> v;
 
+    int res = inc[--u][--v];
+    if (res < 0)
+      cout << -1 << '\n';
+    else if (res == 0 || res >= INT_MAX / 3)
+      cout << 0 << '\n';
+    else
+      cout << 1 << '\n';
+  }
   return 0;
 }
