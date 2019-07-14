@@ -26,24 +26,37 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-int bit[17] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536};
-int solve(const int &N, vector<vector<int>> &inc, vector<vector<int>> &dp, int length, int stateBit, int node)
+bool isPossible(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qx, int qy)
 {
-  if (length == N - 1)
-    return inc[node][0] == 0 ? INT_MAX / 2 : inc[node][0];
-  if (dp[stateBit][node] != -1)
-    return dp[stateBit][node];
+  return arr1[0][qx] + arr1[1][qy] + arr2[0][N - qx + qy] + arr2[1][qx + qy] == 0;
+}
 
-  int ret = INT_MAX / 2;
-  for (int i = 0; i < N; i++)
-    if ((stateBit & bit[i]) == 0 && inc[node][i] != 0)
-      ret = min(ret, solve(N, inc, dp, length + 1, stateBit + bit[node], i) + inc[node][i]);
+void updQueen(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qx, int qy, int diff)
+{
+  arr1[0][qx] += diff;
+  arr1[1][qy] += diff;
+  arr2[0][N - qx + qy] += diff;
+  arr2[1][qx + qy] += diff;
+  return;
+}
 
-  if (ret >= INT_MAX / 2)
-    return INT_MAX / 2;
+i64 solve(const int &N, vector<vector<int>> &arr1, vector<vector<int>> &arr2, int qn)
+{
+  if (qn == N)
+    return 1;
 
-  // cout<<stateBit<<" "<<node<<" "<<ret<<endl;
-  return dp[stateBit][node] = ret;
+  i64 ret = 0;
+  for (int j = 0; j < N; j++)
+  {
+    if (isPossible(N, arr1, arr2, qn, j))
+    {
+      updQueen(N, arr1, arr2, qn, j, 1);
+      ret += solve(N, arr1, arr2, qn + 1);
+      updQueen(N, arr1, arr2, qn, j, -1);
+    }
+  }
+
+  return ret;
 }
 
 int main()
@@ -55,19 +68,9 @@ int main()
   int N;
   cin >> N;
 
-  vector<vector<int>> incMat(N, vector<int>(N));
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      int t;
-      cin >> t;
-      incMat[i][j] = t;
-    }
-  }
-
-  vector<vector<int>> dp(bit[N], vector<int>(N, -1));
-  cout << solve(N, incMat, dp, 0, 0, 0) << endl;
+  auto arr1 = vector<vector<int>>(2, vector<int>(N, 0));
+  auto arr2 = vector<vector<int>>(2, vector<int>(2 * N, 0));
+  cout << solve(N, arr1, arr2, 0) << endl;
 
   return 0;
 }
