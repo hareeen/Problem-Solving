@@ -26,7 +26,34 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-using pii = pair<int, pi>;
+class disjointSet
+{
+private:
+  vector<int> uf;
+
+public:
+  disjointSet(int N)
+  {
+    uf.clear();
+    for (int i = 0; i < N; i++)
+      uf.push_back(i);
+  }
+  int find(int n)
+  {
+    if (n == uf[n])
+      return n;
+    return uf[n] = find(uf[n]);
+  }
+  void merge(int u, int v)
+  {
+    uf[find(u)] = uf[find(v)];
+    return;
+  }
+  bool isSameset(int u, int v)
+  {
+    return find(u) == find(v);
+  }
+};
 
 int main()
 {
@@ -34,82 +61,63 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M, H;
-  int dx[4] = {1, -1, 0, 0}, dy[4] = {0, 0, 1, -1};
-  cin >> N >> M >> H;
-  vector<vector<vector<int>>> holes(N, vector<vector<int>>(M, vector<int>(4, -1)));
+  int T;
+  cin >> T;
 
-  // 0: down, 1: up, 2:right, 3:left
-  for (int i = 0; i < N + 1; i++)
+  for (int tc = 0; tc < T; tc++)
   {
-    for (int j = 0; j < M; j++)
+    int N, K;
+    cin >> N >> K;
+
+    vector<int> weight;
+    for (int i = 0; i < N; i++)
     {
-      int h;
-      cin >> h;
-      if (i != N)
-        holes[i][j][1] = h;
-      if (i != 0)
-        holes[i - 1][j][0] = h;
+      int t;
+      cin >> t;
+      weight.push_back(t);
     }
-  }
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j < M + 1; j++)
+
+    vector<vector<int>> inc(N);
+    vector<int> remain(N);
+    auto ds = disjointSet(N);
+    for (int i = 0; i < K; i++)
     {
-      int h;
-      cin >> h;
-      if (j != M)
-        holes[i][j][3] = h;
-      if (j != 0)
-        holes[i][j - 1][2] = h;
+      int u, v;
+      cin >> u >> v;
+      u--;
+      v--;
+      inc[u].push_back(v);
+      ds.merge(u, v);
+      remain[v]++;
     }
-  }
 
-  priority_queue<pii, deque<pii>, greater<pii>> pq;
-  vector<vector<int>> water(N, vector<int>(M, H));
-  for (int i = 0; i < M; i++)
-  {
-    if (holes[0][i][1] != -1 && holes[0][i][1] < water[0][i])
-      pq.push(pii(holes[0][i][1], pi(0, i))), water[0][i] = holes[0][i][1];
-    if (holes[N - 1][i][0] != -1 && holes[N - 1][i][0] < water[N - 1][i])
-      pq.push(pii(holes[N - 1][i][0], pi(N - 1, i))), water[N - 1][i] = holes[N - 1][i][0];
-  }
-  for (int i = 0; i < N; i++)
-  {
-    if (holes[i][0][3] != -1 && holes[i][0][3] < water[i][0])
-      pq.push(pii(holes[i][0][3], pi(i, 0))), water[i][0] = holes[i][0][3];
-    if (holes[i][M - 1][2] != -1 && holes[i][M - 1][2] < water[i][M - 1])
-      pq.push(pii(holes[i][M - 1][2], pi(i, M - 1))), water[i][M - 1] = holes[i][M - 1][2];
-  }
+    int target;
+    cin >> target;
+    target--;
 
-  while (!pq.empty())
-  {
-    auto cur = pq.top();
-    auto curH = cur.first, curX = cur.second.first, curY = cur.second.second;
-    pq.pop();
-    if (water[curX][curY] < curH)
-      continue;
-    for (int i = 0; i < 4; i++)
+    queue<int> topo;
+    for (int i = 0; i < N; i++)
+      if (remain[i] == 0 && ds.isSameset(i, target))
+        topo.push(i);
+
+    vector<int> minTime(N, 0);
+    while (!topo.empty())
     {
-      if (holes[curX][curY][i] != -1)
+      auto cur = topo.front();
+      topo.pop();
+
+      minTime[cur] += weight[cur];
+      for (const auto &i : inc[cur])
       {
-        int x = curX + dx[i], y = curY + dy[i];
-        if (x < 0 || x >= N || y < 0 || y >= M)
-          continue;
-        if (water[x][y] > max(curH, holes[curX][curY][i]))
-        {
-          water[x][y] = max(curH, holes[curX][curY][i]);
-          pq.push(pii(max(curH, holes[curX][curY][i]), pi(x, y)));
-        }
+        minTime[i] = max(minTime[i], minTime[cur]);
+        remain[i]--;
+        if (remain[i] == 0)
+          topo.push(i);
       }
     }
-  }
 
-  int ans = 0;
-  for (const auto &vec : water)
-    for (const auto &el : vec)
-      ans += el;
-  cout << ans << endl;
+    cout << minTime[target] << '\n';
+  }
 
   return 0;
 }
