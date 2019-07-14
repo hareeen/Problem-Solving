@@ -1,17 +1,27 @@
-import itertools
+tet = [[[1, 1, 1, 1]], [[1], [1], [1], [1]],
+       [[1, 1, 1], [0, 1, 0]], [[0, 1, 0], [1, 1, 1]],
+       [[0, 1], [1, 1], [0, 1]], [[1, 0], [1, 1], [1, 0]],
+       [[1, 1, 0], [0, 1, 1]], [[0, 1, 1], [1, 1, 0]],
+       [[0, 1], [1, 1], [1, 0]], [[1, 0], [1, 1], [0, 1]],
+       [[1, 1], [1, 1]],
+       [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]],
+       [[1, 1, 1], [0, 0, 1]], [[1, 1, 1], [1, 0, 0]],
+       [[1, 0], [1, 0], [1, 1]], [[0, 1], [0, 1], [1, 1]],
+       [[1, 1], [1, 0], [1, 0]], [[1, 1], [0, 1], [0, 1]]]
 
+N, M = map(int, input().split())
+mp = []
+for i in range(N):
+    mp.append(list(map(int, input().split())))
 
-def toNumber(l: tuple):
-    _s = ''
-    for i in l:
-        _s = _s+i
-    return int(_s)
-
-
-a, b = input().split()
 ans = 0
-for i in range(1, max(len(a), len(b))+1):
-    for num_tup in itertools.product(['4', '7'], repeat=i):
-        if int(a) <= toNumber(num_tup) and toNumber(num_tup) <= int(b):
-            ans += 1
+for fragment in tet:
+    for i in range(M-len(fragment[0])+1):
+        for j in range(N-len(fragment)+1):
+            _s = 0
+            for k in range(len(fragment[0])):
+                for l in range(len(fragment)):
+                    _s += mp[l+j][k+i]*fragment[l][k]
+            ans = max(ans, _s)
+
 print(ans)
