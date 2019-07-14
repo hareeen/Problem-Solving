@@ -33,43 +33,43 @@ int main()
   cout.tie(NULL);
 
   int N, M;
-  cin >> N;
-  cin >> M;
+  cin >> N >> M;
 
-  vector<vector<int>> inc(N, vector<int>(N, INT_MAX / 2));
-  for (int i = 0; i < N; i++)
-    inc[i][i] = 0;
-
+  vector<vector<pli>> inc(N, vector<pli>());
   for (int i = 0; i < M; i++)
   {
-    int u, v;
-    cin >> u >> v;
-    u--;
-    v--;
-    inc[u][v] = -1;
-    inc[v][u] = 1;
+    i64 u, v, w;
+    cin >> u >> v >> w;
+    inc[u - 1].push_back(pli(v - 1, w));
   }
 
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-      for (int k = 0; k < N; k++)
-        if ((inc[k][i] > 0 && inc[i][j] > 0) || (inc[k][i] < 0 && inc[i][j] < 0))
-          inc[k][j] = min(inc[k][j], inc[k][i] + inc[i][j]);
-  
-  int S;
-  cin >> S;
-  for (int i = 0; i < S; i++)
+  vector<i64> dist(N, INT_MAX);
+  dist[0] = 0;
+
+  for (int i = 0; i < N - 1; i++)
   {
-    int u, v;
-    cin >> u >> v;
-
-    int res = inc[--u][--v];
-    if (res < 0)
-      cout << -1 << '\n';
-    else if (res == 0 || res >= INT_MAX / 3)
-      cout << 0 << '\n';
-    else
-      cout << 1 << '\n';
+    for (int j = 0; j < N; j++)
+    {
+      for (const auto &[vertex, weight] : inc[j])
+        if (dist[j] != INT_MAX && dist[j] + weight < dist[vertex])
+          dist[vertex] = dist[j] + weight;
+    }
   }
+
+  for (int j = 0; j < N; j++)
+  {
+    for (const auto &[vertex, weight] : inc[j])
+    {
+      if (dist[j] != INT_MAX && dist[j] + weight < dist[vertex])
+      {
+        cout << -1 << endl;
+        return 0;
+      }
+    }
+  }
+
+  for (int i = 1; i < N; i++)
+    cout << (dist[i] >= INT_MAX ? -1 : dist[i]) << '\n';
+
   return 0;
 }
