@@ -1,16 +1,17 @@
-def fact(n: int):
-    mul = 1
-    for i in range(n):
-        mul *= (i+1)
-    return mul
+import itertools
 
 
-def nCr(n: int, r: int):
-    return fact(n)//fact(r)//fact(n-r)
+def toNumber(l: tuple):
+    _s = ''
+    for i in l:
+        _s = _s+i
+    return int(_s)
 
 
+a, b = input().split()
 ans = 0
-n, k = map(int, input().split())
-for i in range(k+1):
-    ans += ((-1)**(i))*nCr(k, i)*((10-i)**n)
+for i in range(1, max(len(a), len(b))+1):
+    for num_tup in itertools.product(['4', '7'], repeat=i):
+        if int(a) <= toNumber(num_tup) and toNumber(num_tup) <= int(b):
+            ans += 1
 print(ans)
