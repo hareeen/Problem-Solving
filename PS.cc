@@ -32,44 +32,31 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
+  int N;
+  cin >> N;
 
-  vector<vector<pli>> inc(N, vector<pli>());
-  for (int i = 0; i < M; i++)
+  vector<pi> line;
+  for (int i = 0; i < N; i++)
   {
-    i64 u, v, w;
-    cin >> u >> v >> w;
-    inc[u - 1].push_back(pli(v - 1, w));
+    int l, r;
+    cin >> l >> r;
+    if (l > r)
+      swap(l, r);
+    line.push_back(pi(l, r));
   }
 
-  vector<i64> dist(N, INT_MAX);
-  dist[0] = 0;
+  sort(iterall(line));
 
-  for (int i = 0; i < N - 1; i++)
-  {
-    for (int j = 0; j < N; j++)
-    {
-      for (const auto &[vertex, weight] : inc[j])
-        if (dist[j] != INT_MAX && dist[j] + weight < dist[vertex])
-          dist[vertex] = dist[j] + weight;
-    }
-  }
-
-  for (int j = 0; j < N; j++)
-  {
-    for (const auto &[vertex, weight] : inc[j])
-    {
-      if (dist[j] != INT_MAX && dist[j] + weight < dist[vertex])
-      {
-        cout << -1 << endl;
-        return 0;
-      }
-    }
-  }
-
+  int ans = 0;
+  int left = line[0].first, right = line[0].second;
   for (int i = 1; i < N; i++)
-    cout << (dist[i] >= INT_MAX ? -1 : dist[i]) << '\n';
+  {
+    if (left <= line[i].first && line[i].first <= right)
+      right = max(right, line[i].second);
+    else
+      ans += (right - left), left = line[i].first, right = line[i].second;
+  }
 
+  cout << ans + right - left << endl;
   return 0;
 }
