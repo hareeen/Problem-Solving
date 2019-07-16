@@ -26,52 +26,54 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+bool process()
+{
+  int N, M, W;
+  cin >> N >> M >> W;
+
+  vector<vector<i64>> inc(N, vector<i64>(N, INT_MAX));
+  for (int i = 0; i < M + W; i++)
+  {
+    i64 u, v, w;
+    cin >> u >> v >> w;
+    inc[u - 1][v - 1] = min(inc[u - 1][v - 1], (i >= M ? -w : w));
+    if (i < M)
+      inc[v - 1][u - 1] = min(inc[v - 1][u - 1], w);
+  }
+
+  vector<i64> dist(N, INT_MAX);
+  dist[0] = 0;
+
+  for (int i = 0; i < N - 1; i++)
+  {
+    for (int j = 0; j < N; j++)
+    {
+      for (int v = 0; v < N; v++)
+        if (dist[j] != INT_MAX && dist[j] + inc[j][v] < dist[v])
+          dist[v] = dist[j] + inc[j][v];
+    }
+  }
+
+  for (int j = 0; j < N; j++)
+  {
+    for (int v = 0; v < N; v++)
+      if (dist[j] != INT_MAX && dist[j] + inc[j][v] < dist[v])
+        return true;
+  }
+
+  return false;
+}
+
 int main()
 {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M, R;
-  cin >> N >> M >> R;
-
-  vector<int> item;
-  for (int i = 0; i < N; i++)
-  {
-    int t;
-    cin >> t;
-    item.push_back(t);
-  }
-
-  vector<vector<int>> floyd(N, vector<int>(N, INT_MAX / 2));
-  for (int i = 0; i < N; i++)
-    floyd[i][i] = 0;
-
-  for (int i = 0; i < R; i++)
-  {
-    int a, b, l;
-    cin >> a >> b >> l;
-    a--;
-    b--;
-    floyd[a][b] = l;
-    floyd[b][a] = l;
-  }
-
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
-      for (int k = 0; k < N; k++)
-        floyd[k][j] = min(floyd[k][j], floyd[k][i] + floyd[i][j]);
-        
-  int ans = 0;
-  for (int i = 0; i < N; i++)
-  {
-    int cp = 0;
-    for (int j = 0; j < N; j++)
-      if (floyd[i][j] <= M)
-        cp += item[j];
-    ans = max(cp, ans);
-  }
-  cout << ans << endl;
+  int T;
+  cin >> T;
+  for (int i = 0; i < T; i++)
+    cout << (process() ? "YES" : "NO") << '\n';
 
   return 0;
 }
