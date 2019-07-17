@@ -1,27 +1,19 @@
-tet = [[[1, 1, 1, 1]], [[1], [1], [1], [1]],
-       [[1, 1, 1], [0, 1, 0]], [[0, 1, 0], [1, 1, 1]],
-       [[0, 1], [1, 1], [0, 1]], [[1, 0], [1, 1], [1, 0]],
-       [[1, 1, 0], [0, 1, 1]], [[0, 1, 1], [1, 1, 0]],
-       [[0, 1], [1, 1], [1, 0]], [[1, 0], [1, 1], [0, 1]],
-       [[1, 1], [1, 1]],
-       [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]],
-       [[1, 1, 1], [0, 0, 1]], [[1, 1, 1], [1, 0, 0]],
-       [[1, 0], [1, 0], [1, 1]], [[0, 1], [0, 1], [1, 1]],
-       [[1, 1], [1, 0], [1, 0]], [[1, 1], [0, 1], [0, 1]]]
+l = []
+for i in range(int(input())):
+    l.append(input())
 
-N, M = map(int, input().split())
-mp = []
-for i in range(N):
-    mp.append(list(map(int, input().split())))
+ret = []
+for j in range(len(l[0])):
+    last = ''
+    same = True
+    for i in range(len(l)):
+        if i == 0:
+            last = l[i][j]
+        else:
+            same = (same and (last == l[i][j]))
+    if same:
+        ret.append(last)
+    else:
+        ret.append('?')
 
-ans = 0
-for fragment in tet:
-    for i in range(M-len(fragment[0])+1):
-        for j in range(N-len(fragment)+1):
-            _s = 0
-            for k in range(len(fragment[0])):
-                for l in range(len(fragment)):
-                    _s += mp[l+j][k+i]*fragment[l][k]
-            ans = max(ans, _s)
-
-print(ans)
+print(''.join(ret))
