@@ -26,41 +26,33 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-class planeSweep
+void dfs1(vector<vector<int>> &inc, vector<bool> &isVisit, stack<int> &trace, const int vertex)
 {
-private:
-  int treeSize;
-  vector<pi> tree;
-
-public:
-  planeSweep(const int &N)
+  for (const auto &el : inc[vertex])
   {
-    treeSize = (1 << static_cast<int>(ceil(log2(static_cast<double>(N))) + 1));
-    tree.clear();
-    tree.resize(treeSize, pi(0, 0));
+    if (!isVisit[el])
+    {
+      isVisit[el] = true;
+      dfs1(inc, isVisit, trace, el);
+    }
   }
+  trace.push(vertex);
+  return;
+}
 
-  int update(int s, int e, int l, int r, int node, const int &diff)
+void dfs2(vector<vector<int>> &inc, vector<bool> &isVisit, vector<int> &group, const int vertex)
+{
+  for (const auto &el : inc[vertex])
   {
-    if (r < s || e < l)
-      return tree[node].first;
-
-    if (l <= s && e <= r)
+    if (!isVisit[el])
     {
-      tree[node].second += diff;
+      isVisit[el] = true;
+      dfs2(inc, isVisit, group, el);
     }
-    else
-    {
-      update(s, (s + e) / 2, l, r, node * 2, diff);
-      update((s + e) / 2 + 1, e, l, r, node * 2 + 1, diff);
-    }
-
-    if (tree[node].second != 0)
-      return tree[node].first = e - s + 1;
-    else
-      return tree[node].first = tree[node * 2].first + tree[node * 2 + 1].first;
   }
-};
+  group.push_back(vertex);
+  return;
+}
 
 int main()
 {
@@ -68,34 +60,59 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
+  int V, E;
+  cin >> V >> E;
 
-  vector<tuple<int, bool, pi>> verticalSeg;
-  for (int i = 0; i < N; i++)
+  vector<vector<int>> inc1(V), inc2(V);
+  for (int i = 0; i < E; i++)
   {
-    int x1, y1, x2, y2;
-    cin >> x1 >> y1 >> x2 >> y2;
-    verticalSeg.push_back(make_tuple(x1, true, pi(y1, y2)));
-    verticalSeg.push_back(make_tuple(x2, false, pi(y1, y2)));
+    int u, v;
+    cin >> u >> v;
+    u--, v--;
+    inc1[u].push_back(v);
+    inc2[v].push_back(u);
   }
-  sort(iterall(verticalSeg));
 
-  int ans = 0, last = -1, subans = 0;
-  auto pS = planeSweep(65536);
-  for (const auto &[xCorr, isStart, yRange] : verticalSeg)
+  for (auto &vec : inc1)
+    sort(iterall(vec));
+  for (auto &vec : inc2)
+    sort(iterall(vec));
+
+  vector<bool> isVisit(V);
+  stack<int> trace;
+
+  for (int i = 0; i < V; i++)
+    if (!isVisit[i])
+      isVisit[i] = true, dfs1(inc1, isVisit, trace, i);
+
+  vector<vector<int>> scc;
+  isVisit = vector<bool>(V);
+  while (!trace.empty())
   {
-    if (last != xCorr && last != -1)
+    if (!isVisit[trace.top()])
     {
-      ans += subans * (xCorr - last);
-      subans = 0;
+      vector<int> group;
+      isVisit[trace.top()] = true;
+      dfs2(inc2, isVisit, group, trace.top());
+      sort(iterall(group));
+      group.push_back(-2);
+      scc.push_back(group);
     }
-    auto res = pS.update(0, 30000, yRange.first, yRange.second - 1, 1, (isStart ? 1 : -1));
-    subans = res;
-    last = xCorr;
+    trace.pop();
   }
 
-  cout << ans << endl;
+  vector<pi> printing;
+  for (int i = 0; i < scc.size(); i++)
+    printing.push_back(pi(scc[i][0], i));
+  sort(iterall(printing));
+
+  cout << scc.size() << '\n';
+  for (const auto &[minel, idx] : printing)
+  {
+    for (const auto &el : scc[idx])
+      cout << el + 1 << " ";
+    cout << '\n';
+  }
 
   return 0;
 }
