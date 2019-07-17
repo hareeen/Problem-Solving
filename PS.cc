@@ -26,132 +26,41 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-void transp_assign(const int sz, vector<vector<int>> &here, vector<vector<int>> &there)
-{
-  for (int i = 0; i < sz; i++)
-    for (int j = 0; j < sz; j++)
-      there[i][j] = here[j][i];
-  return;
-}
-
-// 1: left, 2:right
-void merge(const int sz, vector<int> &target, int dir)
-{
-  list<pi> result;
-  if (dir == 2)
-    reverse(iterall(target));
-  for (const auto el : target)
-  {
-    if (el == 0)
-      continue;
-    if (result.empty())
-    {
-      result.push_back(pi(el, 0));
-      continue;
-    }
-    if (result.back().first == el && result.back().second == 0)
-    {
-      result.pop_back();
-      result.push_back(pi(el + 1, 1));
-    }
-    else
-      result.push_back(pi(el, 0));
-  }
-
-  reverse(iterall(result));
-  target.clear();
-  target.resize(sz - result.size());
-  for (const auto [num, mg] : result)
-    target.push_back(num);
-  if (dir == 1)
-    reverse(iterall(target));
-
-  return;
-}
-
-class Board
+class planeSweep
 {
 private:
-  int boardSize;
-  vector<vector<int>> horizontal;
-  vector<vector<int>> vertical;
+  int treeSize;
+  vector<pi> tree;
 
 public:
-  Board(int N)
+  planeSweep(const int &N)
   {
-    horizontal.clear();
-    vertical.clear();
-    boardSize = N;
-    horizontal.resize(N, vector<int>(N));
-    vertical.resize(N, vector<int>(N));
+    treeSize = (1 << static_cast<int>(ceil(log2(static_cast<double>(N))) + 1));
+    tree.clear();
+    tree.resize(treeSize, pi(0, 0));
   }
-  Board(const vector<vector<int>> &initial)
+
+  int update(int s, int e, int l, int r, int node, const int &diff)
   {
-    horizontal.clear();
-    vertical.clear();
-    boardSize = initial.size();
-    horizontal.resize(boardSize);
-    for (int i = 0; i < boardSize; i++)
+    if (r < s || e < l)
+      return tree[node].first;
+
+    if (l <= s && e <= r)
     {
-      for (const auto &el : initial[i])
-        horizontal[i].push_back((el != 0 ? static_cast<int>(round(log2(el))) : 0));
-    }
-    vertical = decltype(vertical)(boardSize, vector<int>(boardSize, 0));
-    transp_assign(boardSize, horizontal, vertical);
-  }
-  Board(const Board &initial)
-  {
-    boardSize = initial.boardSize;
-    horizontal = decltype(horizontal)(initial.horizontal);
-    vertical = decltype(vertical)(initial.vertical);
-  }
-  void move(int dir)
-  {
-    // left right up down
-    if (dir == 1 || dir == 2)
-    {
-      for (auto &vec : horizontal)
-        merge(boardSize, vec, dir);
-      transp_assign(boardSize, horizontal, vertical);
+      tree[node].second += diff;
     }
     else
     {
-      for (auto &vec : vertical)
-        merge(boardSize, vec, dir - 2);
-      transp_assign(boardSize, vertical, horizontal);
+      update(s, (s + e) / 2, l, r, node * 2, diff);
+      update((s + e) / 2 + 1, e, l, r, node * 2 + 1, diff);
     }
-    return;
-  }
-  int getMax()
-  {
-    int ans = 0;
-    for (const auto &vec : horizontal)
-      for (const auto &el : vec)
-        ans = max(el, ans);
-    return (1 << ans);
-  }
-  vector<vector<int>> getBoard()
-  {
-    return horizontal;
+
+    if (tree[node].second != 0)
+      return tree[node].first = e - s + 1;
+    else
+      return tree[node].first = tree[node * 2].first + tree[node * 2 + 1].first;
   }
 };
-
-int solve(const int &sz, Board board, int depth)
-{
-  if (depth == 5)
-    return board.getMax();
-  else
-  {
-    int ans = 0;
-    for (int i = 1; i <= 4; i++)
-    {
-      auto newBoard = Board(board);
-      newBoard.move(i);
-      ans = max(ans, solve(sz, newBoard, depth + 1));
-    }
-    return ans;
-  }
-}
 
 int main()
 {
@@ -162,18 +71,31 @@ int main()
   int N;
   cin >> N;
 
-  vector<vector<int>> board(N);
+  vector<tuple<int, bool, pi>> verticalSeg;
   for (int i = 0; i < N; i++)
   {
-    for (int j = 0; j < N; j++)
+    int x1, y1, x2, y2;
+    cin >> x1 >> y1 >> x2 >> y2;
+    verticalSeg.push_back(make_tuple(x1, true, pi(y1, y2)));
+    verticalSeg.push_back(make_tuple(x2, false, pi(y1, y2)));
+  }
+  sort(iterall(verticalSeg));
+
+  int ans = 0, last = -1, subans = 0;
+  auto pS = planeSweep(65536);
+  for (const auto &[xCorr, isStart, yRange] : verticalSeg)
+  {
+    if (last != xCorr && last != -1)
     {
-      int t;
-      cin >> t;
-      board[i].push_back(t);
+      ans += subans * (xCorr - last);
+      subans = 0;
     }
+    auto res = pS.update(0, 30000, yRange.first, yRange.second - 1, 1, (isStart ? 1 : -1));
+    subans = res;
+    last = xCorr;
   }
 
-  cout << solve(N, Board(board), 0) << endl;
+  cout << ans << endl;
 
   return 0;
 }
