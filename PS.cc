@@ -26,35 +26,104 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+class segmentTree
+{
+private:
+  int treeSize;
+  vector<int> value;
+  vector<int> lazy;
+
+public:
+  segmentTree(const int N)
+  {
+    treeSize = (1 << static_cast<int>(ceil(log2(N)) + 1));
+    value.resize(treeSize, 0);
+    lazy.resize(treeSize, 0);
+  }
+
+  int init(int s, int e, int node, vector<int> &arr)
+  {
+    if (s == e)
+      return value[node] = arr[s];
+    else
+      return value[node] = init(s, (s + e) / 2, node * 2, arr) ^ init((s + e) / 2 + 1, e, node * 2 + 1, arr);
+  }
+
+  void update(const int l, const int r, int s, int e, int node)
+  {
+    if (lazy[node] != 0)
+    {
+      value[node] = (e - s + 1) - value[node];
+      if (s != e)
+      {
+        lazy[node * 2] ^= lazy[node];
+        lazy[node * 2 + 1] ^= lazy[node];
+      }
+      lazy[node] = 0;
+    }
+
+    if (e < l || r < s)
+      return;
+
+    if (l <= s && e <= r)
+    {
+      value[node] = (e - s + 1) - value[node];
+      if (s != e)
+      {
+        lazy[node * 2] ^= 1;
+        lazy[node * 2 + 1] ^= 1;
+      }
+      return;
+    }
+
+    update(l, r, s, (s + e) / 2, node * 2);
+    update(l, r, (s + e) / 2 + 1, e, node * 2 + 1);
+
+    value[node] = value[node * 2] + value[node * 2 + 1];
+    return;
+  }
+
+  int query(const int l, const int r, int s, int e, int node)
+  {
+    if (lazy[node] != 0)
+    {
+      value[node] = (e - s + 1) - value[node];
+      if (s != e)
+      {
+        lazy[node * 2] ^= lazy[node];
+        lazy[node * 2 + 1] ^= lazy[node];
+      }
+      lazy[node] = 0;
+    }
+
+    if (e < l || r < s)
+      return 0;
+    else if (l <= s && e <= r)
+      return value[node];
+    else
+      return query(l, r, s, (s + e) / 2, node * 2) + query(l, r, (s + e) / 2 + 1, e, node * 2 + 1);
+  }
+};
+
 int main()
 {
-  int N, K;
-  cin >> N >> K;
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  cout.tie(NULL);
 
-  vector<pi> walk, bike;
-  for (int i = 0; i < N; i++)
+  int N, M;
+  cin >> N >> M;
+
+  auto sT = segmentTree(N);
+  for (int i = 0; i < M; i++)
   {
-    int a, b, c, d;
-    cin >> a >> b >> c >> d;
-    walk.push_back(pi(a, b));
-    bike.push_back(pi(c, d));
+    int mode, u, v;
+    cin >> mode >> u >> v;
+    if (mode == 0)
+      sT.update(u, v, 1, N, 1);
+    else
+      cout << sT.query(u, v, 1, N, 1) << '\n';
   }
-
-  vector<vector<int>> dp(N + 1, vector<int>(K + 1, INT_MIN / 2));
-
-  dp[0][0] = 0;
-  for (int i = 0; i < N; i++)
-  {
-    for (int j = 0; j <= K; j++)
-    {
-      if (j >= walk[i].first)
-        dp[i + 1][j] = max(dp[i + 1][j], dp[i][j - walk[i].first] + walk[i].second);
-      if (j >= bike[i].first)
-        dp[i + 1][j] = max(dp[i + 1][j], dp[i][j - bike[i].first] + bike[i].second);
-    }
-  }
-
-  cout << *max_element(iterall(dp.back())) << endl;
 
   return 0;
 }
