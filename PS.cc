@@ -26,93 +26,35 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-void dfs1(vector<vector<int>> &inc, vector<bool> &isVisit, stack<int> &trace, const int vertex)
-{
-  for (const auto &el : inc[vertex])
-  {
-    if (!isVisit[el])
-    {
-      isVisit[el] = true;
-      dfs1(inc, isVisit, trace, el);
-    }
-  }
-  trace.push(vertex);
-  return;
-}
-
-void dfs2(vector<vector<int>> &inc, vector<bool> &isVisit, vector<int> &group, const int vertex)
-{
-  for (const auto &el : inc[vertex])
-  {
-    if (!isVisit[el])
-    {
-      isVisit[el] = true;
-      dfs2(inc, isVisit, group, el);
-    }
-  }
-  group.push_back(vertex);
-  return;
-}
-
 int main()
 {
-  ios_base::sync_with_stdio(false);
-  cin.tie(NULL);
-  cout.tie(NULL);
+  int N, K;
+  cin >> N >> K;
 
-  int V, E;
-  cin >> V >> E;
-
-  vector<vector<int>> inc1(V), inc2(V);
-  for (int i = 0; i < E; i++)
+  vector<pi> walk, bike;
+  for (int i = 0; i < N; i++)
   {
-    int u, v;
-    cin >> u >> v;
-    u--, v--;
-    inc1[u].push_back(v);
-    inc2[v].push_back(u);
+    int a, b, c, d;
+    cin >> a >> b >> c >> d;
+    walk.push_back(pi(a, b));
+    bike.push_back(pi(c, d));
   }
 
-  for (auto &vec : inc1)
-    sort(iterall(vec));
-  for (auto &vec : inc2)
-    sort(iterall(vec));
+  vector<vector<int>> dp(N + 1, vector<int>(K + 1, INT_MIN / 2));
 
-  vector<bool> isVisit(V);
-  stack<int> trace;
-
-  for (int i = 0; i < V; i++)
-    if (!isVisit[i])
-      isVisit[i] = true, dfs1(inc1, isVisit, trace, i);
-
-  vector<vector<int>> scc;
-  isVisit = vector<bool>(V);
-  while (!trace.empty())
+  dp[0][0] = 0;
+  for (int i = 0; i < N; i++)
   {
-    if (!isVisit[trace.top()])
+    for (int j = 0; j <= K; j++)
     {
-      vector<int> group;
-      isVisit[trace.top()] = true;
-      dfs2(inc2, isVisit, group, trace.top());
-      sort(iterall(group));
-      group.push_back(-2);
-      scc.push_back(group);
+      if (j >= walk[i].first)
+        dp[i + 1][j] = max(dp[i + 1][j], dp[i][j - walk[i].first] + walk[i].second);
+      if (j >= bike[i].first)
+        dp[i + 1][j] = max(dp[i + 1][j], dp[i][j - bike[i].first] + bike[i].second);
     }
-    trace.pop();
   }
 
-  vector<pi> printing;
-  for (int i = 0; i < scc.size(); i++)
-    printing.push_back(pi(scc[i][0], i));
-  sort(iterall(printing));
-
-  cout << scc.size() << '\n';
-  for (const auto &[minel, idx] : printing)
-  {
-    for (const auto &el : scc[idx])
-      cout << el + 1 << " ";
-    cout << '\n';
-  }
+  cout << *max_element(iterall(dp.back())) << endl;
 
   return 0;
 }
