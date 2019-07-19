@@ -26,82 +26,46 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-class segmentTree
+class fenwickTree
 {
 private:
   int treeSize;
-  vector<int> value;
-  vector<int> lazy;
+  vector<i64> tree;
 
 public:
-  segmentTree(const int N)
+  fenwickTree(const int N)
   {
-    treeSize = (1 << static_cast<int>(ceil(log2(N)) + 1));
-    value.resize(treeSize, 0);
-    lazy.resize(treeSize, 0);
+    tree.clear();
+    treeSize = N;
+    tree.resize(N + 1);
   }
-
-  int init(int s, int e, int node, vector<int> &arr)
+  void init(vector<int> &arr)
   {
-    if (s == e)
-      return value[node] = arr[s];
-    else
-      return value[node] = init(s, (s + e) / 2, node * 2, arr) ^ init((s + e) / 2 + 1, e, node * 2 + 1, arr);
-  }
-
-  void update(const int l, const int r, int s, int e, int node)
-  {
-    if (lazy[node] != 0)
-    {
-      value[node] = (e - s + 1) - value[node];
-      if (s != e)
-      {
-        lazy[node * 2] ^= lazy[node];
-        lazy[node * 2 + 1] ^= lazy[node];
-      }
-      lazy[node] = 0;
-    }
-
-    if (e < l || r < s)
-      return;
-
-    if (l <= s && e <= r)
-    {
-      value[node] = (e - s + 1) - value[node];
-      if (s != e)
-      {
-        lazy[node * 2] ^= 1;
-        lazy[node * 2 + 1] ^= 1;
-      }
-      return;
-    }
-
-    update(l, r, s, (s + e) / 2, node * 2);
-    update(l, r, (s + e) / 2 + 1, e, node * 2 + 1);
-
-    value[node] = value[node * 2] + value[node * 2 + 1];
+    for (int i = 1; i <= treeSize; i++)
+      update(i, arr[i]);
     return;
   }
-
-  int query(const int l, const int r, int s, int e, int node)
+  i64 sum(int i)
   {
-    if (lazy[node] != 0)
+    i64 ans = 0;
+    while (i > 0)
     {
-      value[node] = (e - s + 1) - value[node];
-      if (s != e)
-      {
-        lazy[node * 2] ^= lazy[node];
-        lazy[node * 2 + 1] ^= lazy[node];
-      }
-      lazy[node] = 0;
+      ans += tree[i];
+      i -= (i & -i);
     }
-
-    if (e < l || r < s)
-      return 0;
-    else if (l <= s && e <= r)
-      return value[node];
-    else
-      return query(l, r, s, (s + e) / 2, node * 2) + query(l, r, (s + e) / 2 + 1, e, node * 2 + 1);
+    return ans;
+  }
+  i64 get(int i)
+  {
+    return tree[i];
+  }
+  void update(int i, i64 diff)
+  {
+    while (i <= treeSize)
+    {
+      tree[i] += diff;
+      i += (i & -i);
+    }
   }
 };
 
@@ -114,15 +78,26 @@ int main()
   int N, M;
   cin >> N >> M;
 
-  auto sT = segmentTree(N);
+  auto fT = fenwickTree(N);
   for (int i = 0; i < M; i++)
   {
-    int mode, u, v;
-    cin >> mode >> u >> v;
-    if (mode == 0)
-      sT.update(u, v, 1, N, 1);
+    int a;
+    cin >> a;
+    if (a == 0)
+    {
+      int u, v;
+      cin >> u >> v;
+      if (u > v)
+        swap(u, v);
+      cout << fT.sum(v) - fT.sum(u - 1) << '\n';
+    }
     else
-      cout << sT.query(u, v, 1, N, 1) << '\n';
+    {
+      int v;
+      i64 d;
+      cin >> v >> d;
+      fT.update(v, d - (fT.sum(v) - fT.sum(v - 1)));
+    }
   }
 
   return 0;
