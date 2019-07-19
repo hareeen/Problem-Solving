@@ -32,33 +32,16 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  i64 N;
-  cin >> N;
+  int a, b, c, d;
+  cin >> a >> b >> c >> d;
 
-  vector<bool> isPrime(1000001, true);
-  isPrime[0] = isPrime[1] = false;
-  for (int i = 2; i <= 100; i++)
-  {
-    if (isPrime[i])
-      for (int j = 2 * i; j <= 1000000; j += i)
-        isPrime[j] = false;
-  }
+  vector<bool> isPossible(d + c + 1);
+  isPossible[0] = true;
+  for (int i = 0; i <= d - a; i++)
+    if (isPossible[i])
+      isPossible[i + a] = isPossible[i + b] = isPossible[i + c] = true;
 
-  i64 res = 1;
-  for (i64 p = 2; p * p <= N; p++)
-  {
-    if (isPrime[p] && N % p == 0)
-    {
-      N /= p;
-      while (N % p == 0)
-        res *= p, N /= p;
-      res *= (p - 1);
-    }
-  }
-  if (N != 1)
-    res *= (N - 1);
-
-  cout << res << endl;
+  cout << static_cast<int>(isPossible[d]) << endl;
 
   return 0;
 }
