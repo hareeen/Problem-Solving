@@ -26,67 +26,112 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+vector<int> addVector(vector<int> &lhs, vector<int> &rhs)
+{
+  vector<int> result;
+  for (int i = 0; i < lhs.size(); i++)
+    result.push_back(lhs[i] + rhs[i]);
+  return result;
+}
+
+class segmentTree
+{
+private:
+  int treeSize;
+  int elementSize;
+  vector<vector<int>> tree;
+
+public:
+  segmentTree(const int N)
+  {
+    treeSize = (1 << static_cast<int>(ceil(log2(N)) + 1)) + 1;
+    tree.clear();
+    tree.resize(treeSize, vector<int>(N));
+  }
+  vector<int> init(const vector<vector<int>> &arr, const int s, const int e, const int node)
+  {
+    if (s == e)
+      return tree[node] = arr[s];
+    else
+    {
+      auto leftRes = init(arr, s, (s + e) / 2, node * 2);
+      auto rightRes = init(arr, (s + e) / 2 + 1, e, node * 2 + 1);
+      return tree[node] = addVector(leftRes, rightRes);
+    }
+  }
+  void update(const int t, const int s, const int e, const int node, const int yCorr, const int diff)
+  {
+    if (t < s || e < t)
+      return;
+    tree[node][yCorr] += diff;
+    if (s != e)
+    {
+      update(t, s, (s + e) / 2, node * 2, yCorr, diff);
+      update(t, (s + e) / 2 + 1, e, node * 2 + 1, yCorr, diff);
+    }
+  }
+  int query(const int s, const int e, const int node, const int lx, const int ly, const int rx, const int ry)
+  {
+    if (e < lx || rx < s)
+      return 0;
+    if (lx <= s && e <= rx)
+    {
+      int ret = 0;
+      for (int i = ly; i <= ry; i++)
+        ret += tree[node][i];
+      return ret;
+    }
+    return query(s, (s + e) / 2, node * 2, lx, ly, rx, ry) + query((s + e) / 2 + 1, e, node * 2 + 1, lx, ly, rx, ry);
+  }
+};
+
 int main()
 {
   ios_base::sync_with_stdio(false);
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N;
-  cin >> N;
+  int N, M;
+  cin >> N >> M;
 
-  vector<pi> polygon;
+  vector<vector<int>> mp(1, vector<int>(N));
   for (int i = 0; i < N; i++)
   {
-    int x, y;
-    cin >> x >> y;
-    polygon.push_back({x, y});
+    vector<int> pb;
+    for (int j = 0; j < N; j++)
+    {
+      int t;
+      cin >> t;
+      pb.push_back(t);
+    }
+    mp.push_back(pb);
   }
 
-  while (!(polygon[0].first == polygon[1].first && polygon[0].second < 0 && polygon[1].second > 0))
-    rotate(polygon.begin(), polygon.begin() + 1, polygon.end());
-
-  int last = INT_MAX;
-  int pairCount = 0;
-  vector<ti> pairs;
-  for (int i = 0; i < N; i += 2)
+  auto sT = segmentTree(N);
+  sT.init(mp, 1, N, 1);
+  for (int i = 0; i < M; i++)
   {
-    int x = polygon[i].first;
-    int y1 = polygon[i].second, y2 = polygon[i + 1].second;
-    if (y1 < y2)
-      swap(y1, y2);
-    if (y1 > 0 && y2 < 0)
+    int mode;
+    cin >> mode;
+    if (mode == 0)
     {
-      if (last == INT_MAX)
-        last = x;
-      else
-      {
-        if (last > x)
-          swap(last, x);
-        pairs.push_back({last, 1, pairCount});
-        pairs.push_back({x, -1, pairCount});
-        pairCount++;
-        last = INT_MAX;
-      }
+      int x, y, c;
+      cin >> x >> y >> c;
+      y--;
+      sT.update(x, 1, N, 1, y, c - mp[x][y]);
+      mp[x][y] = c;
+    }
+    else
+    {
+      int sx, sy, ex, ey;
+      cin >> sx >> sy >> ex >> ey;
+      if (sx > ex)
+        swap(sx, ex);
+      if (sy > ey)
+        swap(sy, ey);
+      cout << sT.query(1, N, 1, sx, sy - 1, ex, ey - 1) << '\n';
     }
   }
-
-  sort(iterall(pairs));
-
-  int openPair = 0;
-  int lastPair = -1;
-  int ans1 = 0, ans2 = 0;
-  for (const auto &[x, isOpen, pairNum] : pairs)
-  {
-    if (isOpen == -1 && openPair == 1)
-      ans1++;
-    if (pairNum == lastPair)
-      ans2++;
-    openPair += isOpen;
-    lastPair = pairNum;
-  }
-
-  cout << ans1 << " " << ans2 << endl;
 
   return 0;
 }
