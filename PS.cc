@@ -26,6 +26,14 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+i64 moveDist(vector<i64> &pole, i64 spacing)
+{
+  i64 ret = 0;
+  for (i64 i = 0; i < pole.size(); i++)
+    ret += abs(pole[i] - (pole[0] + i * spacing));
+  return ret;
+}
+
 int main()
 {
   ios_base::sync_with_stdio(false);
@@ -35,23 +43,30 @@ int main()
   int N;
   cin >> N;
 
-  vector<vector<int>> map(101, vector<int>(101));
-  for (int i = 1; i <= N; i++)
+  vector<i64> pole;
+  for (int i = 0; i < N; i++)
   {
-    int sx, sy, w, h;
-    cin >> sx >> sy >> w >> h;
-    for (int x = 0; x < w; x++)
-      for (int y = 0; y < h; y++)
-        map[sx + x][sy + y] = i;
+    i64 t;
+    cin >> t;
+    pole.push_back(t);
   }
 
-  vector<int> ans(N + 1);
-  for (int i = 0; i <= 100; i++)
-    for (int j = 0; j <= 100; j++)
-      ans[map[i][j]]++;
+  i64 lo = 0, hi = 1000000000;
+  while (hi - lo > 3)
+  {
+    i64 midLo = (lo * 2 + hi) / 3, midHi = (lo + 2 * hi) / 3;
+    i64 distLo = moveDist(pole, midLo), distHi = moveDist(pole, midHi);
+    if (distLo > distHi)
+      lo = midLo + 1;
+    else
+      hi = midHi - 1;
+  }
 
-  for (int i = 1; i <= N; i++)
-    cout << ans[i] << '\n';
+  i64 ans = INT64_MAX;
+  for (i64 i = lo; i <= hi; i++)
+    ans = min(ans, moveDist(pole, i));
+
+  cout << ans << endl;
 
   return 0;
 }
