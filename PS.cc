@@ -32,16 +32,61 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int a, b, c, d;
-  cin >> a >> b >> c >> d;
+  int N;
+  cin >> N;
 
-  vector<bool> isPossible(d + c + 1);
-  isPossible[0] = true;
-  for (int i = 0; i <= d - a; i++)
-    if (isPossible[i])
-      isPossible[i + a] = isPossible[i + b] = isPossible[i + c] = true;
+  vector<pi> polygon;
+  for (int i = 0; i < N; i++)
+  {
+    int x, y;
+    cin >> x >> y;
+    polygon.push_back({x, y});
+  }
 
-  cout << static_cast<int>(isPossible[d]) << endl;
+  while (!(polygon[0].first == polygon[1].first && polygon[0].second < 0 && polygon[1].second > 0))
+    rotate(polygon.begin(), polygon.begin() + 1, polygon.end());
+
+  int last = INT_MAX;
+  int pairCount = 0;
+  vector<ti> pairs;
+  for (int i = 0; i < N; i += 2)
+  {
+    int x = polygon[i].first;
+    int y1 = polygon[i].second, y2 = polygon[i + 1].second;
+    if (y1 < y2)
+      swap(y1, y2);
+    if (y1 > 0 && y2 < 0)
+    {
+      if (last == INT_MAX)
+        last = x;
+      else
+      {
+        if (last > x)
+          swap(last, x);
+        pairs.push_back({last, 1, pairCount});
+        pairs.push_back({x, -1, pairCount});
+        pairCount++;
+        last = INT_MAX;
+      }
+    }
+  }
+
+  sort(iterall(pairs));
+
+  int openPair = 0;
+  int lastPair = -1;
+  int ans1 = 0, ans2 = 0;
+  for (const auto &[x, isOpen, pairNum] : pairs)
+  {
+    if (isOpen == -1 && openPair == 1)
+      ans1++;
+    if (pairNum == lastPair)
+      ans2++;
+    openPair += isOpen;
+    lastPair = pairNum;
+  }
+
+  cout << ans1 << " " << ans2 << endl;
 
   return 0;
 }
