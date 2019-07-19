@@ -26,46 +26,33 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-class fenwickTree
+class disjointSet
 {
 private:
-  int treeSize;
-  vector<i64> tree;
+  vector<int> uf;
 
 public:
-  fenwickTree(const int N)
+  disjointSet(const int N)
   {
-    tree.clear();
-    treeSize = N;
-    tree.resize(N + 1);
+    uf.clear();
+    for (int i = 0; i < N; i++)
+      uf.push_back(i);
   }
-  void init(vector<int> &arr)
+  int find(const int n)
   {
-    for (int i = 1; i <= treeSize; i++)
-      update(i, arr[i]);
+    if (uf[n] == n)
+      return n;
+    else
+      return uf[n] = find(uf[n]);
+  }
+  void merge(const int u, const int v)
+  {
+    uf[find(u)] = uf[find(v)];
     return;
   }
-  i64 sum(int i)
+  bool isSameset(const int u, const int v)
   {
-    i64 ans = 0;
-    while (i > 0)
-    {
-      ans += tree[i];
-      i -= (i & -i);
-    }
-    return ans;
-  }
-  i64 get(int i)
-  {
-    return tree[i];
-  }
-  void update(int i, i64 diff)
-  {
-    while (i <= treeSize)
-    {
-      tree[i] += diff;
-      i += (i & -i);
-    }
+    return find(u) == find(v);
   }
 };
 
@@ -75,29 +62,70 @@ int main()
   cin.tie(NULL);
   cout.tie(NULL);
 
-  int N, M;
-  cin >> N >> M;
+  int N, K;
+  cin >> N >> K;
 
-  auto fT = fenwickTree(N);
-  for (int i = 0; i < M; i++)
+  queue<tuple<int, int, pi>> que;
+  queue<tuple<int, int, pi>> que2;
+  vector<vector<int>> civilMap(N, vector<int>(N, -1));
+  for (int i = 0; i < K; i++)
   {
-    int a;
-    cin >> a;
-    if (a == 0)
+    int x, y;
+    cin >> x >> y;
+    x--;
+    y--;
+    que.push({0, i, pi(x, y)});
+    que2.push({0, i, pi(x, y)});
+    civilMap[x][y] = i;
+  }
+
+  int dx[5] = {0, 0, 1, -1};
+  int dy[5] = {1, -1, 0, 0};
+
+  int last = -1;
+
+  int union_count = 0;
+  auto dS = disjointSet(K);
+  while (!que.empty())
+  {
+    auto [currentYear, civil, corrd] = que.front();
+    que.pop();
+
+    if (last != currentYear)
     {
-      int u, v;
-      cin >> u >> v;
-      if (u > v)
-        swap(u, v);
-      cout << fT.sum(v) - fT.sum(u - 1) << '\n';
+      while (!que2.empty())
+      {
+        auto [curY, civ, cor] = que2.front();
+        que2.pop();
+        for (int i = 0; i < 4; i++)
+        {
+          int nextX = cor.first + dx[i], nextY = cor.second + dy[i];
+          if (nextX >= 0 && nextX < N && nextY >= 0 && nextY < N && civilMap[nextX][nextY] != -1 && !dS.isSameset(civilMap[nextX][nextY], civ))
+          {
+            dS.merge(civilMap[nextX][nextY], civ);
+            union_count++;
+          }
+        }
+      }
+      if (union_count == K - 1)
+      {
+        cout << currentYear << endl;
+        break;
+      }
     }
-    else
+
+    for (int i = 0; i < 4; i++)
     {
-      int v;
-      i64 d;
-      cin >> v >> d;
-      fT.update(v, d - (fT.sum(v) - fT.sum(v - 1)));
+      int nextX = corrd.first + dx[i], nextY = corrd.second + dy[i];
+      if (nextX >= 0 && nextX < N && nextY >= 0 && nextY < N && civilMap[nextX][nextY] == -1)
+      {
+        civilMap[nextX][nextY] = civil;
+        que.push({currentYear + 1, civil, pi(nextX, nextY)});
+        que2.push({currentYear + 1, civil, pi(nextX, nextY)});
+      }
     }
+
+    last = currentYear;
   }
 
   return 0;
