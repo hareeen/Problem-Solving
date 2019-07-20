@@ -26,12 +26,59 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-i64 moveDist(vector<i64> &pole, i64 spacing)
+pi getProper3(pi f, pi s, pi t)
 {
-  i64 ret = 0;
-  for (i64 i = 0; i < pole.size(); i++)
-    ret += abs(pole[i] - (pole[0] + i * spacing));
-  return ret;
+  return {min(min(f.first, s.first), t.first), max(max(f.second, s.second), t.second)};
+}
+
+pi getProper2(pi l, pi r)
+{
+  return {min(l.first, r.first), max(l.second, r.second)};
+}
+
+void constructTree(const vector<vector<pi>> &inc, vector<int> &depth, vector<vector<int>> &parents, vector<vector<int>> &maxParents, vector<vector<int>> &minParents, int node, int last, int lastWeight)
+{
+  depth[node] = (last == -1 ? 1 : (depth[last] + 1));
+  parents[node].push_back(last);
+  minParents[node].push_back((lastWeight == -1 ? INT_MAX : lastWeight));
+  maxParents[node].push_back((lastWeight == -1 ? INT_MIN : lastWeight));
+
+  for (int cur = 2; cur < depth[node]; cur *= 2)
+  {
+    minParents[node].push_back(min(minParents[node].back(), minParents[parents[node].back()][parents[node].size() - 1]));
+    maxParents[node].push_back(max(maxParents[node].back(), maxParents[parents[node].back()][parents[node].size() - 1]));
+    parents[node].push_back(parents[parents[node].back()][parents[node].size() - 1]);
+  }
+
+  for (const auto &el : inc[node])
+    if (el.first != last)
+      constructTree(inc, depth, parents, maxParents, minParents, el.first, node, el.second);
+
+  return;
+}
+
+pi LCA(vector<int> &depth, vector<vector<int>> &parents, vector<vector<int>> &maxParents, vector<vector<int>> &minParents, int u, int v)
+{
+  // cout << u << " " << v << endl;
+  if (depth[u] == depth[v])
+  {
+    if (u == v)
+      return {INT_MAX, INT_MIN};
+    else if (parents[u][0] == parents[v][0])
+      return {min(minParents[u][0], minParents[v][0]), max(maxParents[u][0], maxParents[v][0])};
+    for (int i = 1; i < parents[u].size(); i++)
+      if (parents[u][i] == parents[v][i])
+        return getProper3({minParents[u][i - 1], maxParents[u][i - 1]}, {minParents[v][i - 1], maxParents[v][i - 1]}, LCA(depth, parents, maxParents, minParents, parents[u][i - 1], parents[v][i - 1]));
+    return getProper3({minParents[u].back(), maxParents[u].back()}, {minParents[v].back(), maxParents[v].back()}, LCA(depth, parents, maxParents, minParents, parents[u].back(), parents[v].back()));
+  }
+  else
+  {
+    if (depth[u] < depth[v])
+      swap(u, v);
+    int depthUp = static_cast<int>(log2(static_cast<double>(depth[u] - depth[v])));
+    // cout << depthUp << " " << minParents[u][depthUp] << " " << maxParents[u][depthUp] << endl;
+    return getProper2({minParents[u][depthUp], maxParents[u][depthUp]}, LCA(depth, parents, maxParents, minParents, parents[u][depthUp], v));
+  }
 }
 
 int main()
@@ -43,30 +90,31 @@ int main()
   int N;
   cin >> N;
 
-  vector<i64> pole;
-  for (int i = 0; i < N; i++)
+  vector<vector<pi>> inc(N);
+  for (int i = 0; i < N - 1; i++)
   {
-    i64 t;
-    cin >> t;
-    pole.push_back(t);
+    int u, v, w;
+    cin >> u >> v >> w;
+    u--;
+    v--;
+    inc[u].push_back({v, w});
+    inc[v].push_back({u, w});
   }
 
-  i64 lo = 0, hi = 1000000000;
-  while (hi - lo > 3)
+  vector<int> depth(N);
+  vector<vector<int>> parents(N), minParents(N), maxParents(N);
+  constructTree(inc, depth, parents, maxParents, minParents, 0, -1, -1);
+
+  int M;
+  cin >> M;
+
+  for (int i = 0; i < M; i++)
   {
-    i64 midLo = (lo * 2 + hi) / 3, midHi = (lo + 2 * hi) / 3;
-    i64 distLo = moveDist(pole, midLo), distHi = moveDist(pole, midHi);
-    if (distLo > distHi)
-      lo = midLo + 1;
-    else
-      hi = midHi - 1;
+    int u, v;
+    cin >> u >> v;
+    auto [ansMin, ansMax] = LCA(depth, parents, maxParents, minParents, --u, --v);
+    cout << ansMin << " " << ansMax << '\n';
   }
-
-  i64 ans = INT64_MAX;
-  for (i64 i = lo; i <= hi; i++)
-    ans = min(ans, moveDist(pole, i));
-
-  cout << ans << endl;
 
   return 0;
 }
