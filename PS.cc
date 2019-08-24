@@ -38,20 +38,32 @@ int main() {
   int N;
   cin >> N;
 
-  vector<pi> vec;
-  for (int i = 0; i < N; i++) {
-    int a, b;
-    cin >> a >> b;
-    vec.push_back({b, a});
+  string s;
+  cin >> s;
+  reverse(iterall(s));
+
+  int i = 0, io = 0, ioi = 0, ioj = 0, ioio = 0;
+  for (auto ch : s) {
+    if (ch == 'O') {
+      if (i > 0)
+        i--, io++;
+      else if (ioi > 0)
+        io += 2, ioio++, ioi--;
+    } else if (ch == 'I') {
+      if (io > 0)
+        io--, ioi++;
+      else
+        i++;
+    } else {
+      if (io > 0)
+        io--, ioj++;
+      else if (ioi > 0)
+        ioi--, ioj++, i++;
+    }
+    ioio = min(ioio, io / 2);
   }
 
-  sort(iterall(vec));
-
-  int laste = 0, ans = 0;
-  for (auto [e, s] : vec)
-    if (laste <= s) laste = e, ans++;
-
-  cout << ans << endl;
+  cout << ioi + ioj + ioio << endl;
 
   return 0;
 }
