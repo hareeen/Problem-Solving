@@ -35,5 +35,30 @@ int main() {
   cin.tie(nullptr);
   cout.tie(nullptr);
 
+  int N;
+  cin >> N;
+
+  stack<int> stk;
+  for (int i = 0; i < N; i++) {
+    string s;
+    cin >> s;
+    if (s == "push") {
+      int x;
+      cin >> x;
+      stk.push(x);
+    }
+    if (s == "pop") {
+      if (stk.empty()) {
+        cout << -1 << '\n';
+      } else {
+        cout << stk.top() << '\n';
+        stk.pop();
+      }
+    }
+    if (s == "size") cout << stk.size() << '\n';
+    if (s == "empty") cout << stk.empty() << '\n';
+    if (s == "top") cout << (stk.empty() ? -1 : stk.top()) << '\n';
+  }
+
   return 0;
 }
