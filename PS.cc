@@ -38,27 +38,20 @@ int main() {
   int N;
   cin >> N;
 
-  stack<int> stk;
+  vector<pi> vec;
   for (int i = 0; i < N; i++) {
-    string s;
-    cin >> s;
-    if (s == "push") {
-      int x;
-      cin >> x;
-      stk.push(x);
-    }
-    if (s == "pop") {
-      if (stk.empty()) {
-        cout << -1 << '\n';
-      } else {
-        cout << stk.top() << '\n';
-        stk.pop();
-      }
-    }
-    if (s == "size") cout << stk.size() << '\n';
-    if (s == "empty") cout << stk.empty() << '\n';
-    if (s == "top") cout << (stk.empty() ? -1 : stk.top()) << '\n';
+    int a, b;
+    cin >> a >> b;
+    vec.push_back({b, a});
   }
+
+  sort(iterall(vec));
+
+  int laste = 0, ans = 0;
+  for (auto [e, s] : vec)
+    if (laste <= s) laste = e, ans++;
+
+  cout << ans << endl;
 
   return 0;
 }
