@@ -30,56 +30,35 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
+void manachers(const string &s, vector<int> &res) {
+  int N = s.length();
+  res.clear();
+  res.resize(N);
+
+  int r = 0, p = 0;
+  for (int i = 0; i < N; i++) {
+    if (i <= r) res[i] = min(res[2 * p - i], r - i);
+    while (i - res[i] - 1 >= 0 && i + res[i] + 1 < N &&
+           s[i - res[i] - 1] == s[i + res[i] + 1])
+      res[i]++;
+    if (r < i + res[i]) r = i + res[i], p = i;
+  }
+}
+
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  vector<int> arr(1);
-  while (true) {
-    int t;
-    cin >> t;
-    if (!t) break;
-    arr.push_back(t);
-  }
+  string tmp;
+  cin >> tmp;
 
-  vector<vector<vector<int>>> dp(
-      arr.size() + 1,
-      vector<vector<int>>(5, vector<int>(5, numeric_limits<int>::max() / 2)));
+  string st = "#";
+  for (auto c : tmp) st.push_back(c), st.push_back('#');
 
-  dp[0][0][0] = 0;
+  vector<int> mana;
+  manachers(st, mana);
 
-  int table[5][5] = {{1, 2, 2, 2, 2},
-                     {2, 1, 3, 4, 3},
-                     {2, 3, 1, 3, 4},
-                     {2, 4, 3, 1, 3},
-                     {2, 3, 4, 3, 1}};
-
-  for (int i = 1; i < arr.size(); i++) {
-    auto cur = arr[i];
-    for (int j = 0; j < 5; j++) {
-      for (int k = 0; k < 5; k++) {
-        if (j == cur && k == cur) continue;
-        if (j != cur && k != cur) continue;
-        if (k == cur) {
-          for (int l = 0; l < 5; l++) {
-            dp[i][j][k] = min(dp[i][j][k], dp[i - 1][j][l] + table[l][k]);
-          }
-        }
-        if (j == cur) {
-          for (int l = 0; l < 5; l++) {
-            dp[i][j][k] = min(dp[i][j][k], dp[i - 1][l][k] + table[l][j]);
-          }
-        }
-        // cout<<i<<" "<<j<<" "<<k<<" "<<dp[i][j][k]<<endl;
-      }
-    }
-  }
-
-  int ans = numeric_limits<int>::max();
-  for (int i = 0; i < 5; i++)
-    for (int j = 0; j < 5; j++) ans = min(ans, dp[arr.size()-1][i][j]);
-
-  cout << ans << endl;
+  cout << *max_element(iterall(mana)) << endl;
   return 0;
 }
