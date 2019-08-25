@@ -35,35 +35,45 @@ int main() {
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int N;
-  cin >> N;
+  int N, M;
+  cin >> N >> M;
 
-  string s;
-  cin >> s;
-  reverse(iterall(s));
+  int dp[1002][1002][2];
 
-  int i = 0, io = 0, ioi = 0, ioj = 0, ioio = 0;
-  for (auto ch : s) {
-    if (ch == 'O') {
-      if (i > 0)
-        i--, io++;
-      else if (ioi > 0)
-        io += 2, ioio++, ioi--;
-    } else if (ch == 'I') {
-      if (io > 0)
-        io--, ioi++;
-      else
-        i++;
-    } else {
-      if (io > 0)
-        io--, ioj++;
-      else if (ioi > 0)
-        ioi--, ioj++, i++;
+  for (int i = 0; i <= N + 1; i++) {
+    for (int j = 0; j <= M + 1; j++) {
+      dp[i][j][0] = dp[i][j][1] = numeric_limits<int>::min() / 2;
     }
-    ioio = min(ioio, io / 2);
+  }
+  dp[1][0][0] = 0;
+
+  for (int i = 1; i <= N; i++) {
+    vector<int> arr(1);
+    for (int j = 1; j <= M; j++) {
+      int t;
+      cin >> t;
+      arr.push_back(t);
+    }
+
+    if (i == 1) {
+      for (int j = 1; j <= M; j++) {
+        dp[i][j][0] = dp[i][j - 1][0] + arr[j];
+      }
+      for (int j = M; j >= 1; j--) {
+        dp[i][j][1] = numeric_limits<int>::min() / 2;
+      }
+    } else {
+      for (int j = 1; j <= M; j++) {
+        dp[i][j][0] =
+            max({dp[i][j - 1][0], dp[i - 1][j][0], dp[i - 1][j][1]}) + arr[j];
+      }
+      for (int j = M; j >= 1; j--) {
+        dp[i][j][1] =
+            max({dp[i][j + 1][1], dp[i - 1][j][0], dp[i - 1][j][1]}) + arr[j];
+      }
+    }
   }
 
-  cout << ioi + ioj + ioio << endl;
-
+  cout << max(dp[N][M][0], dp[N][M][1]) << endl;
   return 0;
 }
