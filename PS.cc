@@ -35,45 +35,51 @@ int main() {
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int N, M;
-  cin >> N >> M;
-
-  int dp[1002][1002][2];
-
-  for (int i = 0; i <= N + 1; i++) {
-    for (int j = 0; j <= M + 1; j++) {
-      dp[i][j][0] = dp[i][j][1] = numeric_limits<int>::min() / 2;
-    }
-  }
-  dp[1][0][0] = 0;
-
-  for (int i = 1; i <= N; i++) {
-    vector<int> arr(1);
-    for (int j = 1; j <= M; j++) {
-      int t;
-      cin >> t;
-      arr.push_back(t);
-    }
-
-    if (i == 1) {
-      for (int j = 1; j <= M; j++) {
-        dp[i][j][0] = dp[i][j - 1][0] + arr[j];
-      }
-      for (int j = M; j >= 1; j--) {
-        dp[i][j][1] = numeric_limits<int>::min() / 2;
-      }
-    } else {
-      for (int j = 1; j <= M; j++) {
-        dp[i][j][0] =
-            max({dp[i][j - 1][0], dp[i - 1][j][0], dp[i - 1][j][1]}) + arr[j];
-      }
-      for (int j = M; j >= 1; j--) {
-        dp[i][j][1] =
-            max({dp[i][j + 1][1], dp[i - 1][j][0], dp[i - 1][j][1]}) + arr[j];
-      }
-    }
+  vector<int> arr(1);
+  while (true) {
+    int t;
+    cin >> t;
+    if (!t) break;
+    arr.push_back(t);
   }
 
-  cout << max(dp[N][M][0], dp[N][M][1]) << endl;
+  vector<vector<vector<int>>> dp(
+      arr.size() + 1,
+      vector<vector<int>>(5, vector<int>(5, numeric_limits<int>::max() / 2)));
+
+  dp[0][0][0] = 0;
+
+  int table[5][5] = {{1, 2, 2, 2, 2},
+                     {2, 1, 3, 4, 3},
+                     {2, 3, 1, 3, 4},
+                     {2, 4, 3, 1, 3},
+                     {2, 3, 4, 3, 1}};
+
+  for (int i = 1; i < arr.size(); i++) {
+    auto cur = arr[i];
+    for (int j = 0; j < 5; j++) {
+      for (int k = 0; k < 5; k++) {
+        if (j == cur && k == cur) continue;
+        if (j != cur && k != cur) continue;
+        if (k == cur) {
+          for (int l = 0; l < 5; l++) {
+            dp[i][j][k] = min(dp[i][j][k], dp[i - 1][j][l] + table[l][k]);
+          }
+        }
+        if (j == cur) {
+          for (int l = 0; l < 5; l++) {
+            dp[i][j][k] = min(dp[i][j][k], dp[i - 1][l][k] + table[l][j]);
+          }
+        }
+        // cout<<i<<" "<<j<<" "<<k<<" "<<dp[i][j][k]<<endl;
+      }
+    }
+  }
+
+  int ans = numeric_limits<int>::max();
+  for (int i = 0; i < 5; i++)
+    for (int j = 0; j < 5; j++) ans = min(ans, dp[arr.size()-1][i][j]);
+
+  cout << ans << endl;
   return 0;
 }
