@@ -1,11 +1,20 @@
-fun main(args:Array<String>){with(java.util.Scanner(System.`in`)) {
-  val n=nextInt()
-  val r=nextInt()
-  val d=Array(n+1){Array(r+1){1}}
-  for(i in 1..n) {
-    for(j in 1..minOf(i,r)) {
-      d[i][j]=(d[i-1][j-1]+(if(j!=i) d[i-1][j] else 0))%10007
+fun main(args:Array<String>) = with(java.util.Scanner(System.`in`)) {
+  val N=nextInt()
+  val S=nextInt()
+  val arr=Array(N){nextInt()}
+
+  var ans=0
+  for(i in 1 until (1 shl N)) {
+    var _s=0
+    var idx=0
+    var bits=i
+    while(bits!=0) {
+      if(bits%2==1) _s+=arr[idx]
+      idx++
+      bits/=2
     }
+    if(_s==S) ans++;
   }
-  println(d[n][r])
-}}
+
+  println(ans)
+}
