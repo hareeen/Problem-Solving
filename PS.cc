@@ -71,6 +71,10 @@ int main() {
     vector<bool> vst(N);
     if (dfs(i, vst, match, grp)) ans++;
   }
+  for (int i = 0; i < N; i++) {
+    vector<bool> vst(N);
+    if (dfs(i, vst, match, grp)) ans++;
+  }
 
   cout << ans << endl;
 
