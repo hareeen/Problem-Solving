@@ -69,3 +69,94 @@ public:
     return find(u) == find(v);
   }
 };
+
+----------- I HATE 1006 ----------- 
+
+#include <algorithm>
+#include <deque>
+#include <functional>
+#include <iostream>
+#include <limits>
+#include <list>
+#include <map>
+#include <numeric>
+#include <queue>
+#include <set>
+#include <stack>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+
+#define iterall(container) container.begin(), container.end()
+
+using namespace std;
+
+using i64 = long long;
+using i128 = __int128;
+using pi = pair<int, int>;
+using pli = pair<i64, i64>;
+using ti = tuple<int, int, int>;
+using tli = tuple<i64, i64, i64>;
+
+void process() {
+  int N, W;
+  cin >> N >> W;
+
+  vector<pi> tagon(N + 1);
+  for (int i = 1; i <= N; i++) cin >> tagon[i].first;
+  for (int i = 1; i <= N; i++) cin >> tagon[i].second;
+
+  int ans = numeric_limits<int>::max();
+
+  for (int rt = 0; rt < 2; rt++) {
+    vector<vector<int>> dp(N + 1, vector<int>(3, 1e9));
+    dp[0][0] = 0;
+    if (tagon[1].first + tagon[1].second <= W)
+      dp[1][0] = 1;
+    else
+      dp[1][0] = 2;
+    dp[1][1] = dp[1][2] = 1;
+
+    for (int i = 2; i <= N; i++) {
+      bool fi_pos = tagon[i].first + tagon[i - 1].first <= W;
+      bool se_pos = tagon[i].second + tagon[i - 1].second <= W;
+      bool cur_pos = tagon[i].first + tagon[i].second <= W;
+
+      if (cur_pos) dp[i][0] = min(dp[i][0], dp[i - 1][0] + 1);
+      if (fi_pos && se_pos) dp[i][0] = min(dp[i][0], dp[i - 2][0] + 2);
+      if (fi_pos) dp[i][1] = min(dp[i][1], dp[i - 1][2] + 1);
+      if (se_pos) dp[i][2] = min(dp[i][2], dp[i - 1][1] + 1);
+
+      dp[i][1] = min(dp[i][1], dp[i - 1][0] + 1);
+      dp[i][2] = min(dp[i][2], dp[i - 1][0] + 1);
+      dp[i][0] = min({dp[i][0], dp[i][1] + 1, dp[i][2] + 1, dp[i - 1][0] + 2});
+
+      // cout << tagon[i].first << " " << tagon[i].second << endl;
+      // cout << dp[i][0] << " " << dp[i][1] << " " << dp[i][2] << endl;
+    }
+
+    ans = min(ans, dp[N][0]);
+    rotate(tagon.begin() + 1, tagon.begin() + 2, tagon.end());
+  }
+
+  cout << ans << '\n';
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+  cout.tie(nullptr);
+
+  int T;
+  cin >> T;
+
+  for (int tc = 0; tc < T; tc++) process();
+
+  return 0;
+}

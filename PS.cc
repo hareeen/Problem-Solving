@@ -30,73 +30,49 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-class segTree {
- private:
-  vector<i64> tree;
-
- public:
-  segTree() {
-    tree.clear();
-    tree.resize(262144 + 128);
+bool dfs(int here, vector<bool> &vst, vector<int> &match,
+         vector<vector<int>> &grp) {
+  if (vst[here]) return false;
+  vst[here] = true;
+  for (auto there : grp[here]) {
+    if (match[there] == -1 || dfs(match[there], vst, match, grp)) {
+      match[there] = here;
+      return true;
+    }
   }
-  i64 init(int s, int e, int node, vector<i64> &arr) {
-    if (s == e)
-      return tree[node] = arr[s];
-    else
-      return tree[node] = min(init(s, (s + e) / 2, node * 2, arr),
-                              init((s + e) / 2 + 1, e, node * 2 + 1, arr));
-  }
-  void update(int s, int e, int tar, int node, i64 newel) {
-    if (s > tar || e < tar) return;
-    if (s != e) {
-      update(s, (s + e) / 2, tar, node * 2, newel);
-      update((s + e) / 2 + 1, e, tar, node * 2 + 1, newel);
-      tree[node] = min(tree[node * 2], tree[node * 2 + 1]);
-    } else
-      tree[node] = newel;
-
-    return;
-  }
-  i64 query(int s, int e, int l, int r, int node) {
-    if (e < l || r < s)
-      return numeric_limits<i64>::max();
-    else if (l <= s && e <= r)
-      return tree[node];
-    else
-      return min(query(s, (s + e) / 2, l, r, node * 2),
-                 query((s + e) / 2 + 1, e, l, r, node * 2 + 1));
-  }
-};
+  return false;
+}
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int N;
-  cin >> N;
+  int N, M;
+  cin >> N >> M;
 
-  vector<i64> arr(1);
+  vector<vector<int>> grp(N + M);
+
   for (int i = 0; i < N; i++) {
-    i64 t;
-    cin >> t;
-    arr.push_back(t);
+    int sz;
+    cin >> sz;
+    for (int j = 0; j < sz; j++) {
+      int k;
+      cin >> k;
+      k += (N - 1);
+      grp[i].push_back(k);
+      grp[k].push_back(i);
+    }
   }
 
-  auto sT = segTree();
-  sT.init(1, N, 1, arr);
-
-  int Q;
-  cin >> Q;
-
-  for (int i = 0; i < Q; i++) {
-    int m, a, b;
-    cin >> m >> a >> b;
-    if (m == 1)
-      sT.update(1, N, a, 1, b);
-    else
-      cout << sT.query(1, N, a, b, 1) << '\n';
+  int ans = 0;
+  vector<int> match(N + M, -1);
+  for (int i = 0; i < N; i++) {
+    vector<bool> vst(N);
+    if (dfs(i, vst, match, grp)) ans++;
   }
+
+  cout << ans << endl;
 
   return 0;
 }
