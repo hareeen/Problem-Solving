@@ -1,28 +1,19 @@
-class disjointSet
-{
-private:
+class disjointSet {
+ private:
   vector<int> uf;
 
-public:
-  disjointSet(int N)
-  {
+ public:
+  disjointSet(int N) {
     uf.clear();
-    for (int i = 0; i <= N; i++)
-      uf.push_back(i);
+    for (int i = 0; i <= N; i++) uf.push_back(i);
   }
-  int find(int n)
-  {
-    if (n == uf[n])
-      return n;
+  int find(int n) {
+    if (n == uf[n]) return n;
     return uf[n] = find(uf[n]);
   }
-  void merge(int u, int v)
-  {
+  void merge(int u, int v) {
     uf[find(u)] = uf[find(v)];
     return;
   }
-  bool isSameset(int u, int v)
-  {
-    return find(u) == find(v);
-  }
+  bool isSameset(int u, int v) { return find(u) == find(v); }
 };
