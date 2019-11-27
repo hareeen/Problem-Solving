@@ -65,7 +65,11 @@ int main() {
 
   for (int i = 0; i < Q; i++) {
     int type, a, b;
-    cin >> type >> a >> b;
+    cin >> type;
+    if (type == 1)
+      cin >> a >> b;
+    else
+      a = 1, b = N;
     if (type == 1) mT.update(1, N, 1, a, b);
     if (type == 2) cout << mT.query(1, N, 1, a, b).second << '\n';
   }
