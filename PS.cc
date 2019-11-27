@@ -12,31 +12,37 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class mergeTree {
+class segTree {
  private:
-  vector<vector<int>> tree;
+  vector<pi> tree;
 
  public:
-  mergeTree() {
+  segTree() {
     tree.clear();
     tree.resize(262144 + 1);
   }
-  void init(int s, int e, int node, vector<int> &arr) {
-    for (int i = s; i <= e; i++) tree[node].push_back(arr[i]);
-    sort(iterall(tree[node]));
-    if (s != e) {
-      init(s, (s + e) / 2, node * 2, arr);
-      init((s + e) / 2 + 1, e, node * 2 + 1, arr);
-    }
-  }
-  int query(int s, int e, int node, const int l, const int r, const int k) {
-    if (r < s || e < l)
-      return 0;
-    else if (l <= s && e <= r)
-      return distance(upper_bound(iterall(tree[node]), k), tree[node].end());
+  pi init(int s, int e, int node, const vector<int> &arr) {
+    if (s == e)
+      return tree[node] = {arr[s], s};
     else
-      return query(s, (s + e) / 2, node * 2, l, r, k) +
-             query((s + e) / 2 + 1, e, node * 2 + 1, l, r, k);
+      return tree[node] = min(init(s, (s + e) / 2, node * 2, arr),
+                              init((s + e) / 2 + 1, e, node * 2 + 1, arr));
+  }
+  pi update(int s, int e, int node, const int t, const int n) {
+    if (e < t || t < s) return tree[node];
+    if (s == e)
+      return tree[node] = {n, t};
+    else
+      return tree[node] = min(update(s, (s + e) / 2, node * 2, t, n),
+                              update((s + e) / 2 + 1, e, node * 2 + 1, t, n));
+  }
+  pi query(int s, int e, int node, const int l, const int r) {
+    if (s > r || e < l) return {numeric_limits<int>::max(), -1};
+    if (l <= s && e <= r)
+      return tree[node];
+    else
+      return min(query(s, (s + e) / 2, node * 2, l, r),
+                 query((s + e) / 2 + 1, e, node * 2 + 1, l, r));
   }
 };
 
@@ -54,20 +60,14 @@ int main() {
   int Q;
   cin >> Q;
 
-  auto mT = mergeTree();
+  auto mT = segTree();
   mT.init(1, N, 1, arr);
 
-  int l, r, k;
-  cin >> l >> r >> k;
-
-  auto last_ans = mT.query(1, N, 1, l, r, k);
-  cout << last_ans << '\n';
-  for (int i = 1; i < Q; i++) {
-    cin >> l >> r >> k;
-    l ^= last_ans, r ^= last_ans, k ^= last_ans;
-    last_ans = mT.query(1, N, 1, l, r, k);
-    cout << last_ans << '\n';
+  for (int i = 0; i < Q; i++) {
+    int type, a, b;
+    cin >> type >> a >> b;
+    if (type == 1) mT.update(1, N, 1, a, b);
+    if (type == 2) cout << mT.query(1, N, 1, a, b).second << '\n';
   }
-
   return 0;
 }
