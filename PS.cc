@@ -17,25 +17,30 @@ int main() {
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  string s;
-  cin >> s;
+  int N;
+  cin >> N;
 
-  int N = s.size();
+  vector<int> arr(N);
+  for (int i = 0; i < N; i++) cin >> arr[i];
+
   vector<vector<int>> dp(N + 1, vector<int>(N + 1, 0));
+  for (int i = 0; i < N; i++)
+    if (arr[i] == arr[(i + 1) % N]) dp[i][2] = 1;
 
-  for (int i = 2; i <= N; i++) {
-    for (int j = 0; i + j <= N; j++) {
-      if ((s[j] == 'a' && s[i + j - 1] == 't') ||
-          (s[j] == 'g' && s[i + j - 1] == 'c'))
-        dp[j][i + j] = dp[j + 1][i + j - 1] + 2;
-      for (int k = j; k <= i + j; k++)
-        dp[j][i + j] = max(dp[j][i + j], dp[j][k] + dp[k][i + j]);
+  for (int j = 3; j <= N; j++) {
+    for (int i = 0; i < N; i++) {
+      if (arr[i] == arr[(i + j - 1) % N])
+        dp[i][j] = max(dp[i][j], dp[(i + 1) % N][j - 2] + 1);
+      for (int k = 1; k < j; k++)
+        dp[i][j] = max(dp[i][j], dp[i][k] + dp[(i + k) % N][j - k]);
+      // cout << i << " " << j << " " << dp[i][j] << endl;
     }
   }
 
   int ans = 0;
   for (const auto &vec : dp)
     for (auto el : vec) ans = max(ans, el);
+
   cout << ans << endl;
 
   return 0;
