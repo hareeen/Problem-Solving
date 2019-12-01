@@ -12,33 +12,39 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const int M = 4;
-const int bitNum = static_cast<int>(pow(2, M + 1));
-
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int N = 1000;
-  vector<vector<int>> dp(M * N + 1, vector<int>(bitNum));
-  dp[0][0] = 1;
+  string s;
+  cin >> s;
 
-  for (int i = 0; i < M * N; i++) {
-    for (int j = 0; j < bitNum; j++) {
-      if (i % M != M - 1 && !(j & 3)) dp[i][j + 3] += dp[i][j];
-      if (!(j & (bitNum / 2 + 1))) dp[i][j + (bitNum / 2 + 1)] += dp[i][j];
+  int N = s.size();
+
+  vector<vector<bool>> isPalin(N, vector<bool>(N));
+  for (int i = 0; i < N; i++) isPalin[i][i] = true;
+  for (int i = 0; i + 1 < N; i++) isPalin[i][i + 1] = (s[i] == s[i + 1]);
+
+  for (int j = 2; j < N; j++)
+    for (int i = 0; i + j < N; i++)
+      if (isPalin[i + 1][i + j - 1] && s[i] == s[i + j])
+        isPalin[i][i + j] = true;
+
+  vector<int> dp(N, numeric_limits<int>::max() / 3);
+  dp[0] = 1;
+
+  for (int i = 1; i < N; i++) {
+    if (isPalin[0][i]) {
+      dp[i] = 1;
+      continue;
     }
-    for (int j = 1; j < bitNum; j += 2) dp[i + 1][j / 2] += dp[i][j];
+    dp[i] = dp[i - 1] + 1;
+    for (int j = 0; j < i; j++)
+      if (isPalin[j + 1][i]) dp[i] = min(dp[i], dp[j] + 1);
   }
 
-  int Q;
-  cin >> Q;
-  for (int i = 0; i < Q; i++) {
-    int x;
-    cin >> x;
-    cout << dp[x * M][0] << '\n';
-  }
+  cout << dp.back() << endl;
 
   return 0;
 }
