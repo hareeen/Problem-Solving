@@ -17,34 +17,39 @@ int main() {
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  string s;
-  cin >> s;
+  int N, L;
+  cin >> N >> L;
 
-  int N = s.size();
+  vector<int> arr(N);
+  for (int i = 0; i < N; i++) cin >> arr[i];
+  while (arr.size() % L) arr.push_back(numeric_limits<int>::max());
 
-  vector<vector<bool>> isPalin(N, vector<bool>(N));
-  for (int i = 0; i < N; i++) isPalin[i][i] = true;
-  for (int i = 0; i + 1 < N; i++) isPalin[i][i + 1] = (s[i] == s[i + 1]);
+  vector<int> fmin, rmin;
 
-  for (int j = 2; j < N; j++)
-    for (int i = 0; i + j < N; i++)
-      if (isPalin[i + 1][i + j - 1] && s[i] == s[i + j])
-        isPalin[i][i + j] = true;
-
-  vector<int> dp(N, numeric_limits<int>::max() / 3);
-  dp[0] = 1;
-
-  for (int i = 1; i < N; i++) {
-    if (isPalin[0][i]) {
-      dp[i] = 1;
-      continue;
+  for (int i = 0; i < N; i += L) {
+    int tmp = numeric_limits<int>::max();
+    for (int j = 0; j < L; j++) {
+      tmp = min(tmp, arr[i + j]);
+      fmin.push_back(tmp);
     }
-    dp[i] = dp[i - 1] + 1;
-    for (int j = 0; j < i; j++)
-      if (isPalin[j + 1][i]) dp[i] = min(dp[i], dp[j] + 1);
   }
 
-  cout << dp.back() << endl;
+  for (int i = 0; i < N; i += L) {
+    int tmp = numeric_limits<int>::max();
+    for (int j = 0; j < L; j++) {
+      tmp = min(tmp, arr[arr.size() - i - j - 1]);
+      rmin.push_back(tmp);
+    }
+  }
+  reverse(iterall(rmin));
+
+  for (int i = 0; i < N; i++) {
+    if (i - L + 1 < 0)
+      cout << fmin[i] << " ";
+    else
+      cout << min(fmin[i], rmin[i - L + 1]) << " ";
+  }
+  cout << endl;
 
   return 0;
 }
