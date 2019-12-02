@@ -17,25 +17,27 @@ class segTree {
   vector<int> tree;
 
  public:
-  segTree() { tree.resize(1048576); }
+  segTree() { tree.resize(1048576, numeric_limits<int>::max()); }
 
-  void update(int s, int e, int nd, const int t, const int d) {
+  void update(int s, int e, int nd, const int t, const int nb) {
     if (t < s || e < t)
       return;
-    else if (s != e) {
-      update(s, (s + e) / 2, nd * 2, t, d);
-      update((s + e) / 2 + 1, e, nd * 2 + 1, t, d);
+    else if (s == e)
+      tree[nd] = nb;
+    else {
+      update(s, (s + e) / 2, nd * 2, t, nb);
+      update((s + e) / 2 + 1, e, nd * 2 + 1, t, nb);
+      tree[nd] = min(tree[nd * 2], tree[nd * 2 + 1]);
     }
-    tree[nd] += d;
   }
 
   int query(int s, int e, int nd, const int l, const int r) {
-    if (r < s || e < l) return 0;
+    if (r < s || e < l) return numeric_limits<int>::max();
     if (l <= s && e <= r)
       return tree[nd];
     else
-      return query(s, (s + e) / 2, nd * 2, l, r) +
-             query((s + e) / 2 + 1, e, nd * 2 + 1, l, r);
+      return min(query(s, (s + e) / 2, nd * 2, l, r),
+                 query((s + e) / 2 + 1, e, nd * 2 + 1, l, r));
   }
 };
 
@@ -47,27 +49,34 @@ int main() {
   int N;
   cin >> N;
 
-  vector<int> arr(N);
-  vector<pi> wI;
-  for (int i = 0; i < N; i++) {
-    cin >> arr[i];
-    wI.push_back({arr[i], i});
+  vector<ti> stud(N);
+  for (int i = 1; i <= N; i++) {
+    int t;
+    cin >> t;
+    get<0>(stud[--t]) = i;
+  }
+  for (int i = 1; i <= N; i++) {
+    int t;
+    cin >> t;
+    get<1>(stud[--t]) = i;
+  }
+  for (int i = 1; i <= N; i++) {
+    int t;
+    cin >> t;
+    get<2>(stud[--t]) = i;
   }
 
-  sort(iterall(wI));
+  sort(iterall(stud));
 
-  int cnt = 0, lval = -1;
-  for (auto [val, idx] : wI) {
-    if (lval != val) cnt++;
-    arr[idx] = cnt;
-    lval = val;
-  }
-
+  int ans = 0;
   auto sT = segTree();
   for (int i = 0; i < N; i++) {
-    cout << i - sT.query(1, N, 1, 1, arr[i]) + 1 << '\n';
-    sT.update(1, N, 1, arr[i], 1);
+    // cout << get<1>(stud[i]) << " " << get<2>(stud[i]) << endl;
+    if (sT.query(1, N, 1, 1, get<1>(stud[i])) > get<2>(stud[i])) ans++;
+    sT.update(1, N, 1, get<1>(stud[i]), get<2>(stud[i]));
   }
+
+  cout << ans << endl;
 
   return 0;
 }
