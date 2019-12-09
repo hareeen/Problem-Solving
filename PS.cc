@@ -12,38 +12,54 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-void process() {
-  i64 _a, _b, _i, n;
-  cin >> _a >> _b >> _i >> n;
+class disjointSet {
+ private:
+  vector<int> uf, ng;
 
-  __int128 a = _a, b = _b, ii = _i - 1;
-  vector<__int128> vec;
-  vec.push_back(10);
-  for (__int128 i = 2; i < ii; i *= 2)
-    vec.push_back((vec.back() * vec.back()) % b);
+ public:
+  disjointSet(int N) {
+    uf.clear();
+    uf.resize(N + 1);
+    for (int i = 0; i <= N; i++) uf[i] = i;
 
-  int idx = 0;
-  while (ii) {
-    if (ii % 2) a = (a * vec[idx]) % b;
-    ii /= 2, idx++;
+    ng.clear();
+    ng.resize(N + 1, 1);
   }
-
-  for (int i = 0; i < n; i++) {
-    a *= 10;
-    cout << static_cast<i64>(a / b);
-    a %= b;
+  int find(int x) {
+    if (x == uf[x])
+      return x;
+    else
+      return uf[x] = find(uf[x]);
   }
-  cout << '\n';
-}
+  bool sameset(int u, int v) { return find(u) == find(v); }
+  void merge(int u, int v) {
+    if (sameset(u, v)) return;
+    ng[find(v)] += ng[find(u)];
+    uf[find(u)] = uf[find(v)];
+  }
+  bool commit(int u) {
+    bool ret = ng[find(u)];
+    if (ret) ng[find(u)]--;
+    return ret;
+  }
+};
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int T;
-  cin >> T;
-  for (int i = 0; i < T; i++) process();
+  int N, L;
+  cin >> N >> L;
 
+  vector<pi> arr(N);
+  for (int i = 0; i < N; i++) cin >> arr[i].first >> arr[i].second;
+
+  auto dS = disjointSet(L);
+  for (auto [a, b] : arr) {
+    dS.merge(a, b);
+    cout << ((dS.commit(a) || dS.commit(b)) ? "LADICA" : "SMECE") << '\n';
+  }
+  
   return 0;
 }
