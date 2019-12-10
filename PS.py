@@ -1,43 +1,17 @@
-from math import gcd
-from fractions import Fraction
+from math import sqrt
+from decimal import *
 
-N = int(input())
+getcontext().prec = 50
 
-l = []
-l.append(Fraction(1, 1))
-for i in range(N-1):
-    l.append(Fraction(0, 1))
-
-grp = []
-for i in range(N):
-    grp.append([])
-
-for i in range(N-1):
-    a, b, p, q = map(int, input().split())
-    grp[a].append((b, Fraction(q, p)))
-    grp[b].append((a, Fraction(p, q)))
-
-
-def dfs(u: int):
-    global l, grp
-    for v, w in grp[u]:
-        if l[v] == 0:
-            l[v] = l[u]*w
-            dfs(v)
-
-
-dfs(0)
-
-
-def lcm(a: int, b: int):
-    return a//gcd(a, b)*b
-
-
-lc = 1
-for rat in l:
-    lc = lcm(rat.denominator, lc)
-
-for i in range(N):
-    l[i] *= lc
-
-print(' '.join(map(lambda x: str(x.numerator), l)))
+a, b, c = map(lambda x: Decimal(float(x)), input().split())
+s = (a+b+c)/2
+S = (s*(s-a)*(s-b)*(s-c)).sqrt()
+R = a*b*c/4/S
+r = 2*S/(a+b+c)
+d = max(Decimal(0), (R*(R-2*r))).sqrt()
+k = (R*R-a*a/4).sqrt()+(R*R-b*b/4).sqrt()+(R*R-c*c/4).sqrt()
+print(S)
+print(R)
+print(r)
+print(d)
+print(k)
