@@ -13,63 +13,51 @@ using tli = tuple<i64, i64, i64>;
 #define prec(n) setprecision(n) << fixed
 
 const i64 mod = 1e9 + 7;
-const int ed = 200001;
 
-class segTree {
- private:
-  vector<i64> tree;
-
- public:
-  segTree() {
-    tree.clear();
-    tree.resize(524288 + 1);
+void solve(i64 nd, i64 par, vector<pli> &sol,
+           const vector<vector<pli>> &graph) {
+  if (par != -1 && graph[nd].size() == 1) {
+    sol[nd] = {0, 0};
+    return;
   }
-
-  void update(int s, int e, int nd, const int t, const i64 d) {
-    if (t < s || e < t) return;
-    if (s <= t && t <= e) tree[nd] += d, tree[nd] %= mod;
-    if (s != e) {
-      update(s, (s + e) / 2, nd * 2, t, d);
-      update((s + e) / 2 + 1, e, nd * 2 + 1, t, d);
-    }
+  for (auto [th, we] : graph[nd]) {
+    if (th == par) continue;
+    solve(th, nd, sol, graph);
+    sol[nd].first += (sol[th].first + 1) * we;
+    sol[nd].first %= mod;
+    sol[nd].second +=
+        (((sol[th].first + 1) * (sol[th].first + 1)) % mod) * we * we;
+    sol[nd].second %= mod;
   }
-
-  i64 query(int s, int e, int nd, const int l, const int r) {
-    if (l <= s && e <= r)
-      return tree[nd] % mod;
-    else if (e < l || r < s)
-      return 0;
-    else
-      return (query(s, (s + e) / 2, nd * 2, l, r) +
-              query((s + e) / 2 + 1, e, nd * 2 + 1, l, r)) %
-             mod;
-  }
-};
+}
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
   cout.tie(nullptr);
 
-  int N;
+  i64 N;
   cin >> N;
 
-  auto sT1 = segTree(), sT2 = segTree();
-  i64 su = 0, ans = 1;
-  for (i64 i = 0; i < N; i++) {
-    i64 k;
-    cin >> k, k++;
+  vector<vector<pli>> graph(N);
+  for (int i = 0; i < N - 1; i++) {
+    i64 u, v, w;
+    cin >> u >> v >> w;
+    u--, v--;
+    graph[u].push_back({v, w});
+    graph[v].push_back({u, w});
+  }
 
-    if (i != 0)
-      ans *= ((2 * sT1.query(1, ed, 1, k, ed) - su -
-               (2 * sT2.query(1, ed, 1, k, ed) - i) * k) %
-              mod);
-    su += k;
-    su %= mod;
+  vector<pli> sol(N);
+  solve(0, -1, sol, graph);
+
+  i64 ans = 0;
+  for (auto [as, bs] : sol) {
+    // cout << as << " " << bs << endl;
+    i64 tmp = ((as * as) % mod - bs);
+    if (tmp % 2) tmp += mod;
+    ans += (tmp / 2 + as);
     ans %= mod;
-
-    sT1.update(1, ed, 1, k, k);
-    sT2.update(1, ed, 1, k, 1);
   }
 
   cout << (ans + mod) % mod << endl;
