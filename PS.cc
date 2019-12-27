@@ -3,6 +3,7 @@
 using namespace std;
 
 using i64 = long long;
+using i128 = __int128;
 using d64 = long double;
 using pi = pair<int, int>;
 using pli = pair<i64, i64>;
@@ -13,11 +14,11 @@ using tli = tuple<i64, i64, i64>;
 #define prec(n) setprecision(n) << fixed
 
 inline i64 smod(i64 a, i64 m) { return ((a % m) + m) % m; }
-inline __int128 smod(__int128 a, __int128 m) { return ((a % m) + m) % m; }
+inline i128 smod(i128 a, i128 m) { return ((a % m) + m) % m; }
 
 i64 gcd(i64 a, i64 b) { return a ? gcd(b % a, a) : b; }
 
-__int128 getInv(__int128 a, __int128 b) {
+i128 getInv(i128 a, i128 b) {
   if (a <= 1)
     return a;
   else if (a > b)
