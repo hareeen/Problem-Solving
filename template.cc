@@ -3,7 +3,6 @@
 using namespace std;
 
 using i64 = long long;
-using i128 = __int128;
 using d64 = long double;
 using pi = pair<int, int>;
 using pli = pair<i64, i64>;
