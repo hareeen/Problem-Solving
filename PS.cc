@@ -12,87 +12,36 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-using cpx = complex<d64>;
-
-vector<cpx> nrU; // nth root of unity
-
-void FFT(vector<cpx> &v, i64 idx) {
-    const i64 N = v.size();
-    if (N == 1) return;
-
-    vector<cpx> odd, even;
-    for (int i = 0; i < N; i++) {
-        if (i % 2) odd.push_back(v[i]);
-        else even.push_back(v[i]);
-    }
-
-    FFT(even, (idx * 2) % nrU.size());
-    FFT(odd, (idx * 2) % nrU.size());
-
-    i64 pos = 0;
-    for (int i = 0; i < N / 2; i++) {
-        v[i] = even[i] + nrU[pos] * odd[i];
-        v[i + N / 2] = even[i] - nrU[pos] * odd[i];
-        pos += idx;
-        pos %= nrU.size();
-    }
+inline i64 smod(i64 x, i64 m) {
+    return (x % m + m) % m;
 }
 
-
-vector<cpx> convolution(vector<cpx> a, vector<cpx> b) {
-    i64 N = 1;
-    while (N <= a.size() || N <= b.size()) N *= 2;
-    N *= 2;
-
-    const d64 PI = acos(static_cast<long double>(-1));
-    for (i64 i = 0; i < N; i++) {
-        const d64 theta = static_cast<d64>(2 * i) * PI / static_cast<d64>(N);
-        nrU.emplace_back(cpx(cos(theta), sin(theta)));
-    }
-
-    a.resize(N), b.resize(N);
-    FFT(a, 1), FFT(b, 1);
-
-    vector<cpx> c(N);
-    generate(iterall(c), [&, i = -1]() mutable -> cpx {
-        i++;
-        return a[i] * b[i];
-    });
-
-    FFT(c, N - 1);
-    for (auto &el:c) el /= cpx(static_cast<d64>(N));
-
-    return c;
+tli ext_euc(i64 a, i64 b) {
+    if (b == 0) return {a, 1, 0};
+    auto[g, x, y] = ext_euc(b, a % b);
+    return {g, y, x - (a / b) * y};
 }
 
-using ui64 = unsigned long long;
+const i64 MOD = 1e9 + 7;
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, M;
-    cin >> N >> M;
-    N++, M++;
+    i64 N, K;
+    cin >> N >> K;
 
-    vector<i64> a(N), b(M);
-    for (int i = 0; i < N; i++) cin >> a[i];
-    for (int i = 0; i < M; i++) cin >> b[i];
+    vector<i64> fact(1, 1);
+    for (int i = 1; i <= N; i++) fact.push_back(fact.back() * i), fact.back() %= MOD;
 
-    vector<cpx> ac, bc;
-    transform(iterall(a), back_inserter(ac), [](i64 x) -> cpx { return cpx(x); });
-    transform(iterall(b), back_inserter(bc), [](i64 x) -> cpx { return cpx(x); });
+    i64 ans = fact.back();
+    ans *= get<1>(ext_euc(fact[K], MOD));
+    ans = smod(ans, MOD);
+    ans *= get<1>(ext_euc(fact[N - K], MOD));
+    ans = smod(ans, MOD);
 
-    auto c = convolution(ac, bc);
-
-    vector<ui64> ret;
-    transform(iterall(c), back_inserter(ret), [](cpx x) -> ui64 {
-        return static_cast<ui64>(x.real() + (x.real() > 0 ?
-                                             static_cast<d64>(0.5) : static_cast<d64>(-0.5)));
-    });
-
-    cout << accumulate(iterall(ret), static_cast<ui64>(0), [](ui64 su, ui64 x) -> ui64 { return su ^ x; }) << endl;
+    cout << ans << endl;
 
     return 0;
 }
