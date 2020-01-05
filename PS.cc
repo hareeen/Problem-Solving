@@ -14,8 +14,7 @@ using tli = tuple<i64, i64, i64>;
 
 class Node {
 public:
-    int s, e;
-    i64 val;
+    int s, e, val;
     Node *l, *r;
 
     Node() {
@@ -23,12 +22,12 @@ public:
         l = r = nullptr;
     }
 
-    Node(int _s, int _e, i64 _val) {
+    Node(int _s, int _e, int _val) {
         s = _s, e = _e, val = _val;
         l = r = nullptr;
     }
 
-    Node(int _s, int _e, i64 _val, Node *_l, Node *_r) {
+    Node(int _s, int _e, int _val, Node *_l, Node *_r) {
         s = _s, e = _e, val = _val;
         l = _l, r = _r;
     }
@@ -42,7 +41,7 @@ public:
         tree.clear();
     }
 
-    static Node *init(int s, int e, const vector<i64> &arr) {
+    static Node *init(int s, int e, const vector<int> &arr) {
         if (s == e) return new Node(s, e, arr[s]);
         else {
             auto left = init(s, (s + e) / 2, arr);
@@ -51,7 +50,7 @@ public:
         }
     }
 
-    static Node *update(Node *here, const int t, const i64 d) {
+    static Node *update(Node *here, const int t, const int d) {
         int s = here->s, e = here->e;
         if (t < s || e < t) return here;
         else if (s == e) return new Node(s, e, here->val + d, here->l, here->r);
@@ -66,7 +65,7 @@ public:
         tree.push_back(toAppend);
     }
 
-    static i64 query(Node *here, const int l, const int r) {
+    static int query(Node *here, const int l, const int r) {
         int s = here->s, e = here->e;
         if (r < s || e < l) return 0;
         else if (l <= s && e <= r) return here->val;
@@ -74,36 +73,46 @@ public:
     }
 };
 
+int solve(int L, int R, const int k, const psegTree &sT, const int N) {
+    int l = 1, r = N;
+    while (l < r) {
+        int mid = (l + r) / 2;
+        auto midVal = psegTree::query(sT.tree[R], 1, mid) - psegTree::query(sT.tree[L - 1], 1, mid);
+        if (midVal >= k) r = mid;
+        else l = mid + 1;
+    }
+
+    for (int i = max(1, l - 3); i <= min(N, l + 3); i++) {
+        auto val = psegTree::query(sT.tree[R], 1, i) - psegTree::query(sT.tree[L - 1], 1, i);
+        if (val >= k) return i;
+    }
+}
+
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, Q;
+    cin >> N >> Q;
 
-    vector<i64> arr(N + 1);
-    for (int i = 1; i <= N; i++) cin >> arr[i];
+    vector<int> arr(N);
+    for (int i = 0; i < N; i++) cin >> arr[i];
+
+    auto zip = arr;
+    sort(iterall(zip));
+    zip.erase(unique(iterall(zip)), zip.end());
+    for (auto &el:arr) el = (lower_bound(iterall(zip), el) - zip.begin() + 1);
 
     auto sT = psegTree();
-    sT.create(psegTree::init(1, N, arr));
+    vector<int> zeros(N + 1);
+    sT.create(psegTree::init(1, N, zeros));
 
-    int Q;
-    cin >> Q;
-
+    for (auto el:arr) sT.create(psegTree::update(sT.tree.back(), el, 1));
     for (int i = 0; i < Q; i++) {
-        int t;
-        cin >> t;
-        if (t == 1) {
-            int idx, v;
-            cin >> idx >> v;
-            // cout<<"asdf"<<v - psegTree::query(sT.tree.back(), idx, idx)<<endl;
-            sT.create(psegTree::update(sT.tree.back(), idx, v - psegTree::query(sT.tree.back(), idx, idx)));
-        } else {
-            int k, l, r;
-            cin >> k >> l >> r;
-            cout << psegTree::query(sT.tree[k], l, r) << '\n';
-        }
+        int l, r, k;
+        cin >> l >> r >> k;
+        cout << zip[solve(l, r, k, sT, N) - 1] << '\n';
     }
 
     return 0;
