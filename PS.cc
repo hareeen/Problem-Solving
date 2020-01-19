@@ -31,14 +31,14 @@ int main() {
     int fn = 2;
     for (; fibo[fn - 1] < 1e15;)
         fibo.push_back(fibo[fn - 1] + fibo[fn - 2]), ++fn;
-    
 
+    auto n = N;
     auto it = prev(fibo.end());
-    while (N > 0) {
-        while (*it > N) --it;
-        N -= *it;
+    while (n > 0) {
+        while (*it > n) --it;
+        n -= *it;
     }
 
-    cout << *it << endl;
+    cout << (*it == N ? -1 : *it) << endl;
     return 0;
 }
