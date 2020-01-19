@@ -12,169 +12,67 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-template<class T>
-using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
+template <class T>
+using ordered_set =
+    tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
 
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-int M, N;
+#define x first
+#define y second
 
-int xt, yt;
-int t;
-int d;
+pli operator-(const pli &l, const pli &r) { return {r.x - l.x, r.y - l.y}; }
 
-int lx, rx, ly, ry;
-int l, r;
+inline i64 ccw(pli p1, pli p2, pli p3) {
+    auto [x1, y1] = p2 - p1;
+    auto [x2, y2] = p3 - p1;
 
-class Node {
-public:
-    int v;
-    Node *l, *r;
+    return x1 * y2 - y1 * x2;
+}
 
-    Node() {
-        v = 0;
-        l = r = nullptr;
-    }
-};
+inline i64 dist(pli p1, pli p2) {
+    auto [xx, yy] = p2 - p1;
+    return xx * xx + yy * yy;
+}
 
-class segTree {
-public:
-    static void update(int s, int e, Node *here) {
-        if (!here) return;
+void process() {
+    int N;
+    cin >> N;
 
-        if (t < s || e < t) return;
-        if (s == e) {
-            here->v = d;
-            return;
-        }
+    deque<pair<pli, int>> v(N);
+    for (int i = 0; i < N; i++) cin >> v[i].first.x >> v[i].first.y, v[i].second = i;   
 
-        if (s <= t && t <= (s + e) / 2) {
-            if (!here->l) here->l = new Node();
-            update(s, (s + e) / 2, here->l);
-        } else {
-            if (!here->r) here->r = new Node();
-            update((s + e) / 2 + 1, e, here->r);
-        }
+    sort(iterall(v));
 
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = here->l->v;
-        if (here->r) q2 = here->r->v;
-        here->v = max(q1, q2);
-    }
+    auto pt = v[0];
+    v.pop_front();
+    sort(iterall(v), [&pt](auto l, auto r) {
+        auto c = ccw(pt.first, l.first, r.first);
+        if (c != 0) return c > 0;
+        return dist(pt.first, l.first) < dist(pt.first, r.first);
+    });
 
-    static int query(int s, int e, Node *here) {
-        if (!here) return 0;
-        if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return here->v;
+    auto iter = v.end() - 1;
+    while (ccw(iter->first, v.back().first, pt.first) == 0) --iter;
+    ++iter;
 
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = query(s, (s + e) / 2, here->l);
-        if (here->r) q2 = query((s + e) / 2 + 1, e, here->r);
-        return max(q1, q2);
-    }
-};
+    reverse(iter, v.end());
 
-class Node2d {
-public:
-    Node *v;
-    Node2d *l, *r;
-
-    Node2d() {
-        v = nullptr;
-        l = r = nullptr;
-    }
-
-    explicit Node2d(Node *_v) {
-        v = _v;
-        l = r = nullptr;
-    }
-};
-
-class segTree2d {
-public:
-    static void update(int s, int e, Node2d *here) {
-        if (!here) return;
-
-        if (xt < s || e < xt) return;
-        if (s == e) {
-            segTree::update(1, N, here->v);
-            return;
-        }
-
-        if (s <= xt && xt <= (s + e) / 2) {
-            if (!here->l) here->l = new Node2d(new Node());
-            update(s, (s + e) / 2, here->l);
-        } else {
-            if (!here->r) here->r = new Node2d(new Node());
-            update((s + e) / 2 + 1, e, here->r);
-        }
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = segTree::query(1, N, here->l->v);
-        if (here->r) q2 = segTree::query(1, N, here->r->v);
-
-        auto _d = d;
-        d = max(q1, q2);
-        segTree::update(1, N, here->v);
-        d = _d;
-    }
-
-    static int query(int s, int e, Node2d *here) {
-        if (!here) return 0;
-        if (rx < s || e < lx) return 0;
-        if (lx <= s && e <= rx) return segTree::query(1, N, here->v);
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = query(s, (s + e) / 2, here->l);
-        if (here->r) q2 = query((s + e) / 2 + 1, e, here->r);
-        return max(q1, q2);
-    }
-};
-
-auto sT = new Node2d(new Node());
+    cout << pt.second << " ";
+    for (auto el : v) cout << el.second << " ";
+    cout << '\n';
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    cin >> M >> N;
+    int C;
+    cin >> C;
 
-    vector<ti> v(N);
-    for (int i = 0; i < N; i++) cin >> get<0>(v[i]);
-    for (int i = 0; i < N; i++) cin >> get<1>(v[i]);
-    if (M == 3) for (int i = 0; i < N; i++) cin >> get<2>(v[i]);
-    else for (int i = 0; i < N; i++) get<2>(v[i]) = get<0>(v[i]);
-    sort(iterall(v));
+    for (int i = 0; i < C; i++) process();
 
-    vector<int> c1(N), c2(N);
-    for (int i = 0; i < N; i++) c1[i] = get<1>(v[i]);
-    for (int i = 0; i < N; i++) c2[i] = get<2>(v[i]);
-
-    sort(iterall(c1));
-    sort(iterall(c2));
-
-    c1.erase(unique(iterall(c1)), c1.end());
-    c2.erase(unique(iterall(c2)), c2.end());
-
-    int ans = 0;
-    for (int i = 0; i < N; i++) {
-        int cc1 = lower_bound(iterall(c1), get<1>(v[i])) - c1.begin() + 1;
-        int cc2 = lower_bound(iterall(c2), get<2>(v[i])) - c2.begin() + 1;
-
-        lx=1, rx=cc1;
-        ly=1, ry=cc2;
-        l=ly, r=ry;
-        auto Q = segTree2d::query(1, N, sT) + 1;
-        ans = max(ans, Q);
-
-        d=Q;
-        xt=cc1, yt=cc2;
-        t=cc2;
-        segTree2d::update(1, N, sT);
-    }
-
-    cout << ans << endl;
     return 0;
 }
