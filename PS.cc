@@ -24,15 +24,18 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, M;
-    cin>>N>>M;
+    int N;
+    cin>>N;
 
-    vector<int> arr(N);
-    for(int i=0;i<N;i++) cin>>arr[i];
-    
-    int mx=0;
-    for(int i=0;i<N;i++) for(int j=i+1;j<N;j++) for(int k=j+1;k<N;k++) if(arr[i]+arr[j]+arr[k]<=M) mx=max(mx,arr[i]+arr[j]+arr[k]);
-    
-    cout<<mx<<endl;
+    deque<int> deq;
+    for(int i=1;i<=N;i++) deq.push_back(i);
+
+    while(deq.size()>1) {
+        deq.pop_front();
+        deq.push_back(deq.front());
+        deq.pop_front();
+    }
+
+    cout<<deq[0]<<endl;
     return 0;
 }
