@@ -27,15 +27,19 @@ int main() {
     int N;
     cin>>N;
 
-    deque<int> deq;
-    for(int i=1;i<=N;i++) deq.push_back(i);
+    vector<int> v(N);
+    for(int i=0;i<N;i++) cin>>v[i];
+    sort(iterall(v));
 
-    while(deq.size()>1) {
-        deq.pop_front();
-        deq.push_back(deq.front());
-        deq.pop_front();
+    int M;
+    cin>>M;
+    
+    for(int i=0;i<M;i++) {
+        int k;
+        cin>>k;
+        cout<<upper_bound(iterall(v), k)-lower_bound(iterall(v), k)<<" ";
     }
+    cout<<endl;
 
-    cout<<deq[0]<<endl;
     return 0;
 }
