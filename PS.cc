@@ -19,63 +19,20 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-i64 p1 = 13, p2 = 7, md = 1e12 - 11;
-
-i64 hs(int here, int pr, const vector<vector<int>> &graph) {
-    if (pr != -1 && graph[here].size() == 1) {
-        return p1;
-    }
-
-    __int128 x = 1;
-    for (auto el : graph[here]) {
-        if (el == pr) continue;
-        x *= (hs(el, here, graph) + 1);
-        x *= p2;
-        x %= md;
-    }
-
-    return x;
-}
-
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int G;
-    cin >> G;
+    int N, M;
+    cin>>N>>M;
 
-    int ans = 0;
-    unordered_set<i64> S;
-    for (int g = 0; g < G; g++) {
-        int N;
-        cin >> N;
-
-        vector<vector<int>> graph(N);
-        for (int i = 0; i < N - 1; i++) {
-            int u, v;
-            cin >> u >> v;
-            graph[u].push_back(v);
-            graph[v].push_back(u);
-        }
-
-        size_t mxsize = 0;
-        for (int i = 0; i < N; i++) mxsize = max(mxsize, graph[i].size());
-
-        vector<i64> v;
-        for (int i = 0; i < N; i++)
-            if (graph[i].size() == mxsize) v.push_back(hs(i, -1, graph));
-
-        for (auto el : v) {
-            if (S.find(el) != S.end()) goto next;
-        }
-
-        ans++;
-        for (auto el : v) S.insert(el);
-
-    next:;
-    }
-
-    cout << ans << endl;
+    vector<int> arr(N);
+    for(int i=0;i<N;i++) cin>>arr[i];
+    
+    int mx=0;
+    for(int i=0;i<N;i++) for(int j=i+1;j<N;j++) for(int k=j+1;k<N;k++) if(arr[i]+arr[j]+arr[k]<=M) mx=max(mx,arr[i]+arr[j]+arr[k]);
+    
+    cout<<mx<<endl;
     return 0;
 }
