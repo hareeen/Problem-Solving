@@ -101,21 +101,39 @@ int main() {
     int N;
     cin >> N;
 
-    auto root = LiChao::init(-1e12, 1e12);
-    for (int i = 0; i < N; i++) {
-        int t;
-        cin >> t;
+    vector<i64> arr(N);
+    for (int i = 0; i < N; i++) cin >> arr[i];
 
-        if (t == 1) {
-            i64 a, b;
-            cin >> a >> b;
-            LiChao::update(root, Line(a, b));
-        } else {
-            i64 x;
-            cin >> x;
-            cout << LiChao::query(root, x) << '\n';
+    i64 ans = 0;
+    for (int i = 0; i < N; i++) ans += (arr[i] * (i + 1));
+
+    i64 ret = 0;
+    {
+        i64 _su = arr[0];
+        vector<i64> dp(N);
+        auto root = LiChao::init(1, 1e6);
+        for (int i = 1; i < N; i++) {
+            LiChao::update(root, Line(arr[i - 1], -(i - 1) * arr[i - 1] + _su));
+            _su += arr[i];
+            dp[i] = max(0LL, LiChao::query(root, i) - _su);
         }
+        ret = max(ret, *max_element(iterall(dp)));
     }
 
+    reverse(iterall(arr));
+
+    {
+        i64 _su = arr[0];
+        vector<i64> dp(N);
+        auto root = LiChao::init(1, 1e6);
+        for (int i = 1; i < N; i++) {
+            LiChao::update(root, Line(-arr[i - 1], (i - 1) * arr[i - 1] - _su));
+            _su += arr[i];
+            dp[i] = max(0LL, LiChao::query(root, i) + _su);
+        }
+        ret = max(ret, *max_element(iterall(dp)));
+    }
+
+    cout << ans + ret << endl;
     return 0;
 }
