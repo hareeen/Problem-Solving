@@ -1,8 +1,11 @@
 N=int(input())
-l=[]
+s=input()
+p=1
+res=0
 for i in range(N):
-    s=input().split()
-    l.append((int(s[0]), i, s[1]))
-l.sort()
-for i in l:
-    print(i[0], i[2])
+    res+=(p*(ord(s[i])-ord('a')+1))
+    res%=1234567891
+    p*=31
+    p%=1234567891
+
+print(res)
