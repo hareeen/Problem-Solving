@@ -19,121 +19,63 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const i64 inf = numeric_limits<i64>::max() / 3;
+i64 p1 = 13, p2 = 7, md = 1e12 - 11;
 
-class Line {
-   public:
-    i64 a, b;
-
-    Line() { a = 0, b = -inf; }
-
-    Line(i64 _a, i64 _b) { a = _a, b = _b; }
-
-    inline i64 get(i64 x) { return a * x + b; }
-};
-
-class Node {
-   public:
-    i64 s, e;
-    Line v;
-    Node *l, *r;
-
-    Node() {
-        s = e = 0;
-        v = Line();
-        l = r = nullptr;
+i64 hs(int here, int pr, const vector<vector<int>> &graph) {
+    if (pr != -1 && graph[here].size() == 1) {
+        return p1;
     }
 
-    Node(i64 _s, i64 _e) {
-        s = _s, e = _e;
-        v = Line();
-        l = r = nullptr;
+    __int128 x = 1;
+    for (auto el : graph[here]) {
+        if (el == pr) continue;
+        x *= (hs(el, here, graph) + 1);
+        x *= p2;
+        x %= md;
     }
 
-    Node(i64 _s, i64 _e, i64 _a, i64 _b) {
-        s = _s, e = _e;
-        v = Line(_a, _b);
-        l = r = nullptr;
-    }
-};
-
-namespace LiChao {
-Node* init(i64 s, i64 e) { return new Node(s, e); }
-
-void update(Node* here, const Line d) {
-    i64 s = here->s, e = here->e;
-    i64 m = (s + e) / 2;
-
-    auto lo = here->v, hi = d;
-    if (lo.get(s) > hi.get(s)) swap(lo, hi);
-
-    if (lo.get(e) < hi.get(e)) {
-        here->v = hi;
-        return;
-    }
-
-    if (lo.get(m) < hi.get(m)) {
-        here->v = hi;
-        if (!here->r) here->r = new Node(m + 1, e);
-        update(here->r, lo);
-    } else {
-        here->v = lo;
-        if (!here->l) here->l = new Node(s, m);
-        update(here->l, hi);
-    }
+    return x;
 }
-
-i64 query(Node* here, const i64 x) {
-    if (!here) return -inf;
-
-    i64 s = here->s, e = here->e;
-    i64 m = (s + e) / 2;
-
-    return max(here->v.get(x), x <= m ? query(here->l, x) : query(here->r, x));
-}
-};  // namespace LiChao
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int G;
+    cin >> G;
 
-    vector<i64> arr(N);
-    for (int i = 0; i < N; i++) cin >> arr[i];
+    int ans = 0;
+    unordered_set<i64> S;
+    for (int g = 0; g < G; g++) {
+        int N;
+        cin >> N;
 
-    i64 ans = 0;
-    for (int i = 0; i < N; i++) ans += (arr[i] * (i + 1));
-
-    i64 ret = 0;
-    {
-        i64 _su = arr[0];
-        vector<i64> dp(N);
-        auto root = LiChao::init(1, 1e6);
-        for (int i = 1; i < N; i++) {
-            LiChao::update(root, Line(arr[i - 1], -(i - 1) * arr[i - 1] + _su));
-            _su += arr[i];
-            dp[i] = max(0LL, LiChao::query(root, i) - _su);
+        vector<vector<int>> graph(N);
+        for (int i = 0; i < N - 1; i++) {
+            int u, v;
+            cin >> u >> v;
+            graph[u].push_back(v);
+            graph[v].push_back(u);
         }
-        ret = max(ret, *max_element(iterall(dp)));
+
+        size_t mxsize = 0;
+        for (int i = 0; i < N; i++) mxsize = max(mxsize, graph[i].size());
+
+        vector<i64> v;
+        for (int i = 0; i < N; i++)
+            if (graph[i].size() == mxsize) v.push_back(hs(i, -1, graph));
+
+        for (auto el : v) {
+            if (S.find(el) != S.end()) goto next;
+        }
+
+        ans++;
+        for (auto el : v) S.insert(el);
+
+    next:;
     }
 
-    reverse(iterall(arr));
-
-    {
-        i64 _su = arr[0];
-        vector<i64> dp(N);
-        auto root = LiChao::init(1, 1e6);
-        for (int i = 1; i < N; i++) {
-            LiChao::update(root, Line(-arr[i - 1], (i - 1) * arr[i - 1] - _su));
-            _su += arr[i];
-            dp[i] = max(0LL, LiChao::query(root, i) + _su);
-        }
-        ret = max(ret, *max_element(iterall(dp)));
-    }
-
-    cout << ans + ret << endl;
+    cout << ans << endl;
     return 0;
 }
