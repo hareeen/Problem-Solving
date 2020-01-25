@@ -18,163 +18,192 @@ using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statisti
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-int M, N;
+#define x first
+#define y second
 
-int xt, yt;
-int t;
-int d;
+pli operator-(const pli &lhs, const pli &rhs) {
+    return {lhs.x - rhs.x, lhs.y - rhs.y};
+}
 
-int lx, rx, ly, ry;
-int l, r;
+inline i64 ccw(pli p1, pli p2, pli p3) {
+    auto[x1, y1] = p2 - p1;
+    auto[x2, y2] = p3 - p1;
 
-class Node {
-public:
-    int v;
-    Node *l, *r;
+    return x1 * y2 - x2 * y1;
+}
 
-    Node() {
-        v = 0;
-        l = r = nullptr;
+i64 dir(pli p1, pli p2, pli p3) {
+    auto c = ccw(p1, p2, p3);
+
+    if (c > 0)
+        return 1;
+    else if (c == 0)
+        return 0;
+    else
+        return -1;
+}
+
+i64 isIntersect(pli p1, pli p2, pli q1, pli q2) {
+    return dir(p1, p2, q1) * dir(p1, p2, q2) < 0 &&
+           dir(q1, q2, p1) * dir(q1, q2, p2) < 0;
+}
+
+void dfs1(int here, vector<bool> &vst, stack<int> &trace,
+          const vector<vector<int>> &graph) {
+    for (auto there : graph[here]) {
+        if (!vst[there]) vst[there] = true, dfs1(there, vst, trace, graph);
     }
-};
 
-class segTree {
-public:
-    static void update(int s, int e, Node *here) {
-        if (!here) return;
+    trace.push(here);
+}
 
-        if (t < s || e < t) return;
-        if (s == e) {
-            here->v = d;
-            return;
+void dfs2(int here, vector<bool> &vst, vector<int> &group,
+          const vector<vector<int>> &graph) {
+    for (auto there : graph[here]) {
+        if (!vst[there]) vst[there] = true, dfs2(there, vst, group, graph);
+    }
+
+    group.push_back(here);
+}
+
+vector<vector<int>> SCC(const vector<vector<int>> &graph1,
+                        const vector<vector<int>> &graph2) {
+    const int V = graph1.size();
+
+    vector<bool> vst(V);
+    stack<int> trace;
+    for (int i = 0; i < V; i++)
+        if (!vst[i]) {
+            vst[i] = true, dfs1(i, vst, trace, graph1);
         }
 
-        if (s <= t && t <= (s + e) / 2) {
-            if (!here->l) here->l = new Node();
-            update(s, (s + e) / 2, here->l);
-        } else {
-            if (!here->r) here->r = new Node();
-            update((s + e) / 2 + 1, e, here->r);
+    vector<vector<int>> ret;
+    vst.clear(), vst.resize(V);
+    while (!trace.empty()) {
+        if (!vst[trace.top()]) {
+            vector<int> group;
+            vst[trace.top()] = true;
+            dfs2(trace.top(), vst, group, graph2);
+            sort(iterall(group));
+            ret.push_back(group);
         }
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = here->l->v;
-        if (here->r) q2 = here->r->v;
-        here->v = max(q1, q2);
+        trace.pop();
     }
 
-    static int query(int s, int e, Node *here) {
-        if (!here) return 0;
-        if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return here->v;
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = query(s, (s + e) / 2, here->l);
-        if (here->r) q2 = query((s + e) / 2 + 1, e, here->r);
-        return max(q1, q2);
-    }
+    return ret;
 };
-
-class Node2d {
-public:
-    Node *v;
-    Node2d *l, *r;
-
-    Node2d() {
-        v = nullptr;
-        l = r = nullptr;
-    }
-
-    explicit Node2d(Node *_v) {
-        v = _v;
-        l = r = nullptr;
-    }
-};
-
-class segTree2d {
-public:
-    static void update(int s, int e, Node2d *here) {
-        if (!here) return;
-
-        if (xt < s || e < xt) return;
-        if (s == e) {
-            segTree::update(1, N, here->v);
-            return;
-        }
-
-        if (s <= xt && xt <= (s + e) / 2) {
-            if (!here->l) here->l = new Node2d(new Node());
-            update(s, (s + e) / 2, here->l);
-        } else {
-            if (!here->r) here->r = new Node2d(new Node());
-            update((s + e) / 2 + 1, e, here->r);
-        }
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = segTree::query(1, N, here->l->v);
-        if (here->r) q2 = segTree::query(1, N, here->r->v);
-
-        auto _d = d;
-        d = max(q1, q2);
-        segTree::update(1, N, here->v);
-        d = _d;
-    }
-
-    static int query(int s, int e, Node2d *here) {
-        if (!here) return 0;
-        if (rx < s || e < lx) return 0;
-        if (lx <= s && e <= rx) return segTree::query(1, N, here->v);
-
-        int q1 = 0, q2 = 0;
-        if (here->l) q1 = query(s, (s + e) / 2, here->l);
-        if (here->r) q2 = query((s + e) / 2 + 1, e, here->r);
-        return max(q1, q2);
-    }
-};
-
-auto sT = new Node2d(new Node());
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    cin >> M >> N;
+    int N;
+    cin >> N;
 
-    vector<ti> v(N);
-    for (int i = 0; i < N; i++) cin >> get<0>(v[i]);
-    for (int i = 0; i < N; i++) cin >> get<1>(v[i]);
-    if (M == 3) for (int i = 0; i < N; i++) cin >> get<2>(v[i]);
-    else for (int i = 0; i < N; i++) get<2>(v[i]) = get<0>(v[i]);
-    sort(iterall(v));
+    vector<pair<pli, pli>> segs(3 * N);
+    for (int i = 0; i < 3 * N; i++)
+        cin >> segs[i].first.x >> segs[i].first.y >> segs[i].second.x >>
+            segs[i].second.y;
 
-    vector<int> c1(N), c2(N);
-    for (int i = 0; i < N; i++) c1[i] = get<1>(v[i]);
-    for (int i = 0; i < N; i++) c2[i] = get<2>(v[i]);
+    vector<vector<int>> graph1(6 * N), graph2(6 * N);
+    const int _not = 3 * N;
 
-    sort(iterall(c1));
-    sort(iterall(c2));
+    auto tsat_append = [&graph1, &graph2, _not](int u, int v, bool dau = true) {
+        graph1[u].push_back(v);
+        if (dau)
+            graph1[(_not + v) % (2 * _not)].push_back((_not + u) % (2 * _not));
 
-    c1.erase(unique(iterall(c1)), c1.end());
-    c2.erase(unique(iterall(c2)), c2.end());
+        graph2[v].push_back(u);
+        if (dau)
+            graph2[(_not + u) % (2 * _not)].push_back((_not + v) % (2 * _not));
+    };
 
-    int ans = 0;
     for (int i = 0; i < N; i++) {
-        int cc1 = lower_bound(iterall(c1), get<1>(v[i])) - c1.begin() + 1;
-        int cc2 = lower_bound(iterall(c2), get<2>(v[i])) - c2.begin() + 1;
-
-        lx=1, rx=cc1;
-        ly=1, ry=cc2;
-        l=ly, r=ry;
-        auto Q = segTree2d::query(1, N, sT) + 1;
-        ans = max(ans, Q);
-
-        d=Q;
-        xt=cc1, yt=cc2;
-        t=cc2;
-        segTree2d::update(1, N, sT);
+        tsat_append(_not + 3 * i, 3 * i + 1);
+        tsat_append(_not + 3 * i + 1, 3 * i + 2);
+        tsat_append(_not + 3 * i + 2, 3 * i);
     }
 
-    cout << ans << endl;
+    for (int i = 0; i < 3 * N; i++) {
+        for (int j = i + 1; j < 3 * N; j++) {
+            if (isIntersect(segs[i].first, segs[i].second,
+                            segs[j].first, segs[j].second))
+                tsat_append(i, _not + j);
+        }
+    }
+
+    auto scc = SCC(graph1, graph2);
+    const int S = scc.size();
+
+    vector<int> con(2 * _not);
+    for (int i = 0; i < S; i++) {
+        for (auto v : scc[i]) con[v] = i;
+    }
+
+    for (int i = 0; i < _not; i++) {
+        if (con[i] == con[i + _not]) {
+            cout << -1 << endl;
+            return 0;
+        }
+    }
+
+    vector<vector<bool>> graph(S, vector<bool>(S));
+    for (int u = 0; u < 2 * _not; u++) {
+        for (auto v : graph1[u]) graph[con[u]][con[v]] = true;
+    }
+
+    for (int i = 0; i < S; i++) graph[i][i] = false;
+
+    vector<int> indeg(S);
+    for (int i = 0; i < S; i++) {
+        for (int j = 0; j < S; j++) {
+            if (graph[i][j]) indeg[j]++;
+        }
+    }
+
+    vector<bool> vst(S), assigned(2 * _not), ans(2 * _not);
+
+    queue<int> que;
+    for (int i = 0; i < S; i++) {
+        if (indeg[i] == 0) {
+            que.push(i);
+            vst[i] = true;
+        }
+    }
+
+    while (!que.empty()) {
+        auto cur = que.front();
+        que.pop();
+
+        for (auto v:scc[cur]) {
+            if (!assigned[v]) {
+                assigned[v] = true;
+                assigned[(_not + v) % (2 * _not)] = true;
+
+                ans[v] = false;
+                ans[(_not + v) % (2 * _not)] = true;
+            }
+        }
+
+        for (int i = 0; i < S; i++) {
+            if (!graph[cur][i]) continue;
+            if (--indeg[i] == 0 && !vst[i]) {
+                que.push(i);
+                vst[i] = true;
+            }
+        }
+    }
+
+    vector<int> res;
+    for (int i = _not; i < 2 * _not; i++)
+        if (ans[i]) res.push_back(i - _not + 1);
+
+    cout << res.size() << endl;
+    if (res.size()) {
+        copy(iterall(res), ostream_iterator<int>(cout, " "));
+        cout << endl;
+    }
+
     return 0;
 }
