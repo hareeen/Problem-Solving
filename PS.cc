@@ -19,33 +19,30 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-i64 solve(i64 f, i64 s, i64 n, const i64 t) {
-    // cout << f << " " << s << " " << n << " " << t << endl;
-    if (t == n) return f;
-    if (t == n + 1) return s;
-    if (f < 0 || s < 0) return solve(s, f > s ? f - s : s - f, n + 1, t);
-    if (f < s) return solve(s, s - f, n + 1, t);
-    if (f >= 2 * s) {
-        i64 p;
+const int inf = numeric_limits<int>::max() / 3;
 
-        if (s != 0)
-            p = f / (2 * s);
-        else
-            p = t / 3 + 1;
+void relax(int sv, int sw, vector<int> &dist, const vector<vector<bool>> &adj) {
+    const int N = dist.size();
 
-        if (t <= n + 3 * p) {
-            if ((t - n) % 3 == 1)
-                return s;
-            else if ((t - n) % 3 == 2)
-                return f - ((t - n - 1) / 3) * 2 * s - s;
-            else
-                return f - ((t - n - 1) / 3) * 2 * s - 2 * s;
+    dist[sv] = sw;
+    queue<pi> que;
+    que.push({sw, sv});
+
+    while (!que.empty()) {
+        auto [w, u] = que.front();
+        que.pop();
+
+        if (w > dist[u]) continue;
+
+        for (int v = 0; v < N; v++) {
+            if (adj[u][v]) {
+                if (w + 1 < dist[v]) {
+                    dist[v] = w + 1;
+                    que.push({w + 1, v});
+                }
+            }
         }
-
-        return solve(f % (2 * s), s, n + 3 * p, t);
     }
-
-    return solve(s, f - s, n + 1, t);
 }
 
 int main() {
@@ -53,17 +50,60 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    i64 f, s;
-    cin >> f >> s;
+    int N, M, Q;
+    cin >> N >> M >> Q;
 
-    int Q;
-    cin >> Q;
+    vector<vector<bool>> adj(N, vector<bool>(N));
+    vector<pi> edg(M);
 
-    for (int i = 0; i < Q; i++) {
-        i64 t;
-        cin >> t;
-        cout << solve(f, s, 0, t) << '\n';
+    for (int i = 0; i < M; i++) {
+        int u, v;
+        cin >> u >> v;
+        --u, --v;
+
+        adj[u][v] = true;
+        edg[i] = {u, v};
     }
+
+    vector<pi> queries(Q);
+    for (int i = 0; i < Q; i++) {
+        char c;
+        int t, p;
+        cin >> c >> p;
+        --p;
+
+        if (c == 'U')
+            t = 0;
+        else
+            t = 1;
+
+        queries[i] = {t, p};
+        if (t == 0) {
+            auto [u, v] = edg[p];
+            adj[u][v] = false;
+        }
+    }
+
+    vector<int> dist(N, inf);
+    relax(0, 0, dist, adj);
+
+    reverse(iterall(queries));
+
+    vector<int> ret;
+    for (auto [t, p] : queries) {
+        if (t == 0) {
+            auto [u, v] = edg[p];
+            adj[u][v] = true;
+
+            if (dist[v] - dist[u] > 1) relax(v, dist[u] + 1, dist, adj);
+        } else {
+            ret.push_back(dist[p]);
+            if (ret.back() >= inf) ret.back() = -1;
+        }
+    }
+
+    reverse(iterall(ret));
+    copy(iterall(ret), ostream_iterator<int>(cout, "\n"));
 
     return 0;
 }
