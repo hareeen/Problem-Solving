@@ -19,247 +19,139 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class segTree {
-   private:
-    vector<int> vl;
-
-   public:
-    segTree() { vl.resize(262144 + 1); }
-
-    void update(int s, int e, int nd, const int t, const int d) {
-        if (t < s || e < t) return;
-        if (s == e) {
-            vl[nd] = d;
-            return;
-        }
-
-        update(s, (s + e) / 2, nd * 2, t, d);
-        update((s + e) / 2 + 1, e, nd * 2 + 1, t, d);
-        vl[nd] = vl[nd * 2] + vl[nd * 2 + 1];
-    }
-
-    int query(int s, int e, int nd, const int l, const int r) {
-        if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return vl[nd];
-        return query(s, (s + e) / 2, nd * 2, l, r) +
-               query((s + e) / 2 + 1, e, nd * 2 + 1, l, r);
-    }
-};
-
-namespace HLD {
-
-int N;
-vector<vector<int>> adj, tr, spt;
-vector<int> dep, sz;
-vector<int> hld, hc, hld_tp;
-vector<int> in, out;
-segTree sT;
-
-int hld_sz = 0, order = 0;
-
-void init(const int _N) {
-    N = _N;
-
-    adj.resize(N + 1), tr.resize(N + 1), spt.resize(N + 1);
-    dep.resize(N + 1), sz.resize(N + 1);
-
-    hld.resize(N + 1), hc.resize(N + 1);
-    in.resize(N + 1), out.resize(N + 1);
-
-    sT = segTree();
-}
-
-void emplace_edge(int u, int v) {
-    adj[u].emplace_back(v);
-    adj[v].emplace_back(u);
-}
-
-// Make Tree ADJ & Subtree size
-void dfs1(int h, int p) {
-    sz[h] = 1;
-    for (auto t : adj[h]) {
-        if (p == t) continue;
-
-        dfs1(t, h);
-        tr[h].emplace_back(t);
-        sz[h] += sz[t];
-    }
-}
-
-// Depth & Sparse Table
-void dfs2(int h, int p) {
-    if (p == -1) {
-        dep[h] = 1;
-    } else {
-        dep[h] = dep[p] + 1;
-        spt[h].emplace_back(p);
-    }
-
-    for (int i = 1; (1 << i) < dep[h]; i++)
-        spt[h].emplace_back(spt[spt[h][i - 1]][i - 1]);
-
-    for (auto t : tr[h]) dfs2(t, h);
-}
-
-// HLD
-void dfs3(int h, bool _ini = false) {
-    if (_ini) {
-        order = 0, hld_sz = 0;
-        hld[h] = 0;
-        hld_tp.emplace_back(h);
-    }
-
-    in[h] = ++order;
-
-    for (auto t : tr[h]) {
-        if (sz[t] * 2 >= sz[h]) {
-            hld[t] = hld[h];
-            hc[h] = t;
-            dfs3(t);
-            break;
-        }
-    }
-
-    for (auto t : tr[h]) {
-        if (sz[t] * 2 < sz[h]) {
-            hld[t] = ++hld_sz;
-            hld_tp.emplace_back(t);
-            dfs3(t);
-        }
-    }
-
-    out[h] = order;
-}
-
-void update(int t, int d) { sT.update(1, N, 1, in[t], d); }
-
-int lca(int a, int b) {
-    if (dep[a] > dep[b]) swap(a, b);
-
-    auto p = spt[b].size() - 1;
-    while (dep[a] < dep[b]) {
-        while (dep[b] - dep[a] < (1 << p)) --p;
-        b = spt[b][p];
-    }
-
-    p = spt[b].size() - 1;
-    while (true) {
-        if (a == b) return a;
-        if (spt[a][0] == spt[b][0]) return spt[a][0];
-
-        p = min(p, spt[b].size() - 1);
-        while (spt[a][p] == spt[b][p]) --p;
-        a = spt[a][p], b = spt[b][p];
-    }
-}
-
-int query(int a, int b, bool _ini = false) {
-    if (_ini) {
-        auto l = lca(a, b);
-        return query(l, a) + query(l, b) - query(l, l);
-    }
-
-    if (hld[a] == hld[b]) return sT.query(1, N, 1, in[a], in[b]);
-
-    return query(a, spt[hld_tp[hld[b]]][0]) +
-           sT.query(1, N, 1, in[hld_tp[hld[b]]], in[b]);
-}
-
-};  // namespace HLD
-
 class disjointSet {
    private:
-    vector<int> uf;
+    vector<int> uf, rk;
+    stack<pi> trace;
+    stack<bool> isUpdated;
 
    public:
     disjointSet(int N) {
-        uf.clear();
-        for (int i = 0; i <= N; i++) uf.push_back(i);
+        uf.resize(N + 1);
+        for (int i = 1; i <= N; i++) uf[i] = i;
+
+        rk.resize(N + 1);
     }
-    int find(int n) {
-        if (n == uf[n]) return n;
-        return uf[n] = find(uf[n]);
+
+    int find(int v) {
+        while (uf[v] != v) v = uf[v];
+        return v;
     }
-    void merge(int u, int v) {
-        uf[find(u)] = uf[find(v)];
+
+    bool sset(int u, int v) { return find(u) == find(v); }
+
+    int merge(int u, int v) {
+        u = find(u);
+        v = find(v);
+
+        if (u == v) return 0;
+
+        if (rk[u] > rk[v]) swap(u, v);
+        trace.push({u, uf[u]});
+        isUpdated.push(rk[u] == rk[v]);
+
+        uf[u] = v;
+        if (rk[u] == rk[v]) ++rk[v];
+
+        return 1;
+    }
+
+    void revert(int t) {
+        for (int i = 0; i < t; i++) {
+            auto [v, p] = trace.top();
+            auto u = isUpdated.top();
+
+            trace.pop();
+            isUpdated.pop();
+
+            if (u) --rk[uf[v]];
+            uf[v] = p;
+        }
+    }
+};
+
+vector<vector<ti>> edg(262144 + 1);
+void spread(int s, int e, int n, const int l, const int r, const ti t) {
+    if (r < s || e < l) return;
+    if (l <= s && e <= r) {
+        edg[n].emplace_back(t);
         return;
     }
-    bool isSameset(int u, int v) { return find(u) == find(v); }
-};
+
+    spread(s, (s + e) / 2, n * 2, l, r, t);
+    spread((s + e) / 2 + 1, e, n * 2 + 1, l, r, t);
+}
+
+using qi = tuple<int, int, int, int>;
+
+vector<qi> queries(1, {13, 13, 13, 13});
+void solve(int s, int e, int n, vector<disjointSet>& dS) {
+    vector<int> rv(10);
+    for (auto [u, v, w] : edg[n])
+        for (int i = w; i < 10; i++) rv[i] += dS[i].merge(u, v);
+
+    if (s == e) {
+        auto& [t, u, v, w] = queries[s];
+        if (t == 13) {
+            for (int i = 9; i >= 0; i--) {
+                if (dS[i].sset(u, v)) t = i;
+            }
+            if (t == 13) t = -1;
+        }
+    } else {
+        solve(s, (s + e) / 2, n * 2, dS);
+        solve((s + e) / 2 + 1, e, n * 2 + 1, dS);
+    }
+
+    for (int i = 0; i < 10; i++) dS[i].revert(rv[i]);
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, Q;
+    cin >> N >> Q;
 
-    vector<int> we(N + 1);
-    for (int i = 1; i <= N; i++) cin >> we[i];
+    for (int i = 0; i < Q; i++) {
+        int t, u, v, w = 0;
+        cin >> t;
+        if (t == 0)
+            cin >> u >> v >> w;
+        else
+            cin >> u >> v;
 
-    int M;
-    cin >> M;
+        ++u, ++v;
+        t += 11;
 
-    vector<int> qryTp(M);
-    vector<pi> qryPara(M);
-
-    for (int i = 0; i < M; i++) {
-        string s;
-        cin >> s >> qryPara[i].first >> qryPara[i].second;
-        if (s == "bridge") qryTp[i] = 0;
-        if (s == "penguins") qryTp[i] = 1;
-        if (s == "excursion") qryTp[i] = 2;
+        queries.emplace_back(t, u, v, w);
     }
 
-    // adj Generation
-    {
-        HLD::init(N);
+    map<pi, pi> mp;
+    for (int i = 1; i <= Q; i++) {
+        auto [t, u, v, w] = queries[i];
 
-        auto dS = disjointSet(N);
-        for (int i = 0; i < M; i++) {
-            if (qryTp[i] != 0) continue;
+        if (u > v) swap(u, v);
 
-            auto [u, v] = qryPara[i];
-            if (dS.isSameset(u, v)) continue;
-
-            dS.merge(u, v);
-            HLD::emplace_edge(u, v);
-        }
-
-        for (int i = 2; i <= N; i++) {
-            if (dS.isSameset(1, i)) continue;
-            dS.merge(1, i);
-            HLD::emplace_edge(1, i);
+        if (t == 11) {
+            mp.insert({pi(u, v), pi(i, w)});
+        } else if (t == 12) {
+            auto it = mp.find({u, v});
+            spread(1, Q, 1, it->second.first, i,
+                   {it->first.first, it->first.second, it->second.second});
+            mp.erase(it);
         }
     }
 
-    HLD::dfs1(1, -1);
-    HLD::dfs2(1, -1);
-    HLD::dfs3(1, true);
-    for (int i = 1; i <= N; i++) HLD::update(i, we[i]);
+    for (auto [ed, st] : mp)
+        spread(1, Q, 1, st.first, Q, {ed.first, ed.second, st.second});
 
-    auto dS = disjointSet(N);
-    for (int i = 0; i < M; i++) {
-        if (qryTp[i] == 0) {
-            auto [u, v] = qryPara[i];
+    auto dS = vector<disjointSet>(10, disjointSet(N));
+    solve(1, Q, 1, dS);
 
-            if (dS.isSameset(u, v)) {
-                cout << "no\n";
-            } else {
-                dS.merge(u, v);
-                cout << "yes\n";
-            }
-        } else if (qryTp[i] == 1) {
-            auto [v, x] = qryPara[i];
-            HLD::update(v, x);
-        } else {
-            auto [u, v] = qryPara[i];
-            if (!dS.isSameset(u, v))
-                cout << "impossible\n";
-            else
-                cout << HLD::query(u, v, true) << '\n';
-        }
+    for (auto [t, u, v, w] : queries) {
+        if (t <= 10) cout << t << '\n';
     }
 
     return 0;
