@@ -19,114 +19,93 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const i64 inf = numeric_limits<i64>::max() / 3;
+#define x first
+#define y second
 
-class Line {
-   public:
-    i64 a, b;
+pli operator-(const pli &l, const pli &r) { return {l.x - r.x, l.y - r.y}; }
 
-    Line() { a = 0, b = -inf; }
-    Line(i64 _a, i64 _b) { a = _a, b = _b; }
-
-    inline i64 get(i64 x) { return a * x + b; }
-};
-
-class Node {
-   public:
-    i64 s, e;
-    Line v;
-    Node *l, *r;
-
-    Node() {
-        s = e = 0;
-        v = Line();
-        l = r = nullptr;
-    }
-
-    Node(i64 _s, i64 _e) {
-        s = _s, e = _e, v = Line();
-        l = r = nullptr;
-    }
-};
-
-namespace LiChao {
-stack<pair<Node*, Line>> trace;
-
-Node* init(i64 s, i64 e) { return new Node(s, e); }
-
-int update(Node* h, const Line v) {
-    auto s = h->s, e = h->e;
-    auto m = (s + e) / 2;
-
-    trace.push({h, h->v});
-
-    auto lo = h->v, hi = v;
-    if (lo.get(s) > hi.get(s)) swap(lo, hi);
-
-    if (lo.get(e) <= hi.get(e)) {
-        h->v = hi;
-        return 1;
-    }
-
-    if (lo.get(m) < hi.get(m)) {
-        h->v = hi;
-        if (!h->r) h->r = new Node(m + 1, e);
-        return update(h->r, lo) + 1;
-    } else {
-        h->v = lo;
-        if (!h->l) h->l = new Node(s, m);
-        return update(h->l, hi) + 1;
-    }
+inline i64 ccw(pli p1, pli p2, pli p3) {
+    auto [x1, y1] = p2 - p1;
+    auto [x2, y2] = p3 - p1;
+    return x1 * y2 - x2 * y1;
 }
 
-i64 query(Node* h, const i64 x) {
-    if (!h) return -inf;
-
-    auto s = h->s, e = h->e;
-    auto m = (s + e) / 2;
-
-    return max(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
+i64 dir(pli p1, pli p2, pli p3) {
+    auto c = ccw(p1, p2, p3);
+    if (c > 0) return 1;
+    if (c == 0) return 0;
+    return -1;
 }
 
-void revert(int rv) {
-    for (int i = 0; i < rv; i++) {
-        auto& [nd, vl] = trace.top();
-        trace.pop();
-
-        nd->v = vl;
-    }
+bool on_line(pli p1, pli p2, pli q) {
+    return ccw(p1, p2, q) == 0 && p1.x <= q.x && q.x <= p2.x && p1.y <= q.y &&
+           q.y <= p2.y;
 }
 
-};  // namespace LiChao
+bool sub(vector<pli> &l1, vector<pli> &l2) {
+    if(l1.size()==1) return true;
+    if(l1.size()==2) {
+        auto p1 = l1[0], p2 = l1[1];
+        vector<bool> ch(3);
 
-vector<tli> queries(1);
+        for(auto q:l2) {
+            if(on_line(p1, p2, q)) return false;
 
-vector<vector<Line>> edg(1048576 + 1);
-void spread(int s, int e, int n, const int l, const int r, const Line li) {
-    if (r < s || e < l) return;
-    if (l <= s && e <= r) {
-        edg[n].emplace_back(li);
-        return;
+            auto c = dir(p1, p2, q)+1;
+            if(c==1) continue;
+            if(ch[2-c]) return false;
+            ch[c] = true;        
+        }
+
+        return true;
     }
 
-    spread(s, (s + e) / 2, n * 2, l, r, li);
-    spread((s + e) / 2 + 1, e, n * 2 + 1, l, r, li);
+    vector<pli> uh, dh;
+    int un = 0, dn = 0;
+
+    sort(iterall(l1));
+    for (auto pt : l1) {
+        while (un >= 2 && ccw(uh[un - 2], uh[un - 1], pt) >= 0)
+            uh.pop_back(), --un;
+        uh.emplace_back(pt), ++un;
+    }
+
+    reverse(iterall(l1));
+    for (auto pt : l1) {
+        while (dn >= 2 && ccw(dh[dn - 2], dh[dn - 1], pt) >= 0)
+            dh.pop_back(), --dn;
+        dh.emplace_back(pt), ++dn;
+    }
+
+    vector<pli> hull = uh;
+    for (int i = 1; i < dn - 1; i++) hull.emplace_back(dh[i]);
+
+    int hs = un + dn - 2;
+    for (auto q : l2) {
+        for (int i = 0; i < hs; i++) {
+            auto p1 = hull[i];
+            auto p2 = hull[(i + 1) % hs];
+
+            if (on_line(p1, p2, q)) return false;
+            if (ccw(p1, p2, q) > 0) goto next;
+        }
+
+        return false;
+    next:;
+    }
+
+    return true;
 }
 
-vector<i64> ans;
-void solve(int s, int e, int n, Node* rt) {
-    int rv = 0;
-    for (auto [a, b] : edg[n]) rv += LiChao::update(rt, Line(a, b));
+bool process() {
+    int N, M;
+    cin >> N >> M;
 
-    if (s == e) {
-        auto [t, x, _] = queries[s];
-        if (t == 3) ans.emplace_back(LiChao::query(rt, x));
-    } else {
-        solve(s, (s + e) / 2, n * 2, rt);
-        solve((s + e) / 2 + 1, e, n * 2 + 1, rt);
-    }
+    vector<pli> l1(N), l2(M);
+    for (int i = 0; i < N; i++) cin >> l1[i].x >> l1[i].y;
+    for (int i = 0; i < M; i++) cin >> l2[i].x >> l2[i].y;
 
-    LiChao::revert(rv);
+    return sub(l1, l2) && sub(l2, l1);    
 }
 
 int main() {
@@ -134,48 +113,10 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int T;
+    cin >> T;
 
-    for (int i = 0; i < N; i++) {
-        i64 t;
-        i64 a, b = 0;
-
-        cin >> t;
-
-        if (t == 1)
-            cin >> a >> b;
-        else
-            cin >> a;
-
-        queries.emplace_back(t, a, b);
-    }
-
-    set<int> st;
-    for (int i = 1; i <= N; i++) {
-        auto [t, idx, _] = queries[i];
-        if (t == 1) st.insert(i);
-        if (t == 2) {
-            auto [__, a, b] = queries[idx];
-            spread(1, N, 1, idx, i, Line(a, b));
-            st.erase(idx);
-        }
-    }
-
-    for (auto idx : st) {
-        auto [_, a, b] = queries[idx];
-        spread(1, N, 1, idx, N, Line(a, b));
-    }
-
-    auto rt = LiChao::init(-1e9, 1e9);
-    solve(1, N, 1, rt);
-
-    for (auto el : ans) {
-        if (el == -inf)
-            cout << "EMPTY\n";
-        else
-            cout << el << '\n';
-    }
+    for (int i = 0; i < T; i++) cout << (process() ? "YES" : "NO") << '\n';
 
     return 0;
 }
