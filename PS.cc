@@ -19,91 +19,114 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class disjointSet {
-   private:
-    vector<int> uf, rk;
-    stack<pi> trace;
-    stack<bool> isUpdated;
+const i64 inf = numeric_limits<i64>::max() / 3;
 
+class Line {
    public:
-    disjointSet(int N) {
-        uf.resize(N + 1);
-        for (int i = 1; i <= N; i++) uf[i] = i;
+    i64 a, b;
 
-        rk.resize(N + 1);
+    Line() { a = 0, b = -inf; }
+    Line(i64 _a, i64 _b) { a = _a, b = _b; }
+
+    inline i64 get(i64 x) { return a * x + b; }
+};
+
+class Node {
+   public:
+    i64 s, e;
+    Line v;
+    Node *l, *r;
+
+    Node() {
+        s = e = 0;
+        v = Line();
+        l = r = nullptr;
     }
 
-    int find(int v) {
-        while (uf[v] != v) v = uf[v];
-        return v;
-    }
-
-    bool sset(int u, int v) { return find(u) == find(v); }
-
-    int merge(int u, int v) {
-        u = find(u);
-        v = find(v);
-
-        if (u == v) return 0;
-
-        if (rk[u] > rk[v]) swap(u, v);
-        trace.push({u, uf[u]});
-        isUpdated.push(rk[u] == rk[v]);
-
-        uf[u] = v;
-        if (rk[u] == rk[v]) ++rk[v];
-
-        return 1;
-    }
-
-    void revert(int t) {
-        for (int i = 0; i < t; i++) {
-            auto [v, p] = trace.top();
-            auto u = isUpdated.top();
-
-            trace.pop();
-            isUpdated.pop();
-
-            if (u) --rk[uf[v]];
-            uf[v] = p;
-        }
+    Node(i64 _s, i64 _e) {
+        s = _s, e = _e, v = Line();
+        l = r = nullptr;
     }
 };
 
-vector<vector<ti>> edg(262144 + 1);
-void spread(int s, int e, int n, const int l, const int r, const ti t) {
+namespace LiChao {
+stack<pair<Node*, Line>> trace;
+
+Node* init(i64 s, i64 e) { return new Node(s, e); }
+
+int update(Node* h, const Line v) {
+    auto s = h->s, e = h->e;
+    auto m = (s + e) / 2;
+
+    trace.push({h, h->v});
+
+    auto lo = h->v, hi = v;
+    if (lo.get(s) > hi.get(s)) swap(lo, hi);
+
+    if (lo.get(e) <= hi.get(e)) {
+        h->v = hi;
+        return 1;
+    }
+
+    if (lo.get(m) < hi.get(m)) {
+        h->v = hi;
+        if (!h->r) h->r = new Node(m + 1, e);
+        return update(h->r, lo) + 1;
+    } else {
+        h->v = lo;
+        if (!h->l) h->l = new Node(s, m);
+        return update(h->l, hi) + 1;
+    }
+}
+
+i64 query(Node* h, const i64 x) {
+    if (!h) return -inf;
+
+    auto s = h->s, e = h->e;
+    auto m = (s + e) / 2;
+
+    return max(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
+}
+
+void revert(int rv) {
+    for (int i = 0; i < rv; i++) {
+        auto& [nd, vl] = trace.top();
+        trace.pop();
+
+        nd->v = vl;
+    }
+}
+
+};  // namespace LiChao
+
+vector<tli> queries(1);
+
+vector<vector<Line>> edg(1048576 + 1);
+void spread(int s, int e, int n, const int l, const int r, const Line li) {
     if (r < s || e < l) return;
     if (l <= s && e <= r) {
-        edg[n].emplace_back(t);
+        edg[n].emplace_back(li);
         return;
     }
 
-    spread(s, (s + e) / 2, n * 2, l, r, t);
-    spread((s + e) / 2 + 1, e, n * 2 + 1, l, r, t);
+    spread(s, (s + e) / 2, n * 2, l, r, li);
+    spread((s + e) / 2 + 1, e, n * 2 + 1, l, r, li);
 }
 
-using qi = tuple<int, int, int, int>;
-
-vector<qi> queries(1, {13, 13, 13, 13});
-void solve(int s, int e, int n, vector<disjointSet>& dS) {
-    vector<int> rv(10);
-    for (auto [u, v, w] : edg[n])
-        for (int i = w; i < 10; i++) rv[i] += dS[i].merge(u, v);
+vector<i64> ans;
+void solve(int s, int e, int n, Node* rt) {
+    int rv = 0;
+    for (auto [a, b] : edg[n]) rv += LiChao::update(rt, Line(a, b));
 
     if (s == e) {
-        auto& [t, u, v, w] = queries[s];
-        if (t == 13) {
-            for (int i = 9; i >= 0; i--) {
-                if (dS[i].sset(u, v)) t = i;
-            }
-            if (t == 13) t = -1;
-        }
+        auto [t, x, _] = queries[s];
+        if (t == 3) ans.emplace_back(LiChao::query(rt, x));
     } else {
-        solve(s, (s + e) / 2, n * 2, dS);
-        solve((s + e) / 2 + 1, e, n * 2 + 1, dS);
+        solve(s, (s + e) / 2, n * 2, rt);
+        solve((s + e) / 2 + 1, e, n * 2 + 1, rt);
     }
 
-    for (int i = 0; i < 10; i++) dS[i].revert(rv[i]);
+    LiChao::revert(rv);
 }
 
 int main() {
@@ -111,47 +134,47 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, Q;
-    cin >> N >> Q;
+    int N;
+    cin >> N;
 
-    for (int i = 0; i < Q; i++) {
-        int t, u, v, w = 0;
+    for (int i = 0; i < N; i++) {
+        i64 t;
+        i64 a, b = 0;
+
         cin >> t;
-        if (t == 0)
-            cin >> u >> v >> w;
+
+        if (t == 1)
+            cin >> a >> b;
         else
-            cin >> u >> v;
+            cin >> a;
 
-        ++u, ++v;
-        t += 11;
-
-        queries.emplace_back(t, u, v, w);
+        queries.emplace_back(t, a, b);
     }
 
-    map<pi, pi> mp;
-    for (int i = 1; i <= Q; i++) {
-        auto [t, u, v, w] = queries[i];
-
-        if (u > v) swap(u, v);
-
-        if (t == 11) {
-            mp.insert({pi(u, v), pi(i, w)});
-        } else if (t == 12) {
-            auto it = mp.find({u, v});
-            spread(1, Q, 1, it->second.first, i,
-                   {it->first.first, it->first.second, it->second.second});
-            mp.erase(it);
+    set<int> st;
+    for (int i = 1; i <= N; i++) {
+        auto [t, idx, _] = queries[i];
+        if (t == 1) st.insert(i);
+        if (t == 2) {
+            auto [__, a, b] = queries[idx];
+            spread(1, N, 1, idx, i, Line(a, b));
+            st.erase(idx);
         }
     }
 
-    for (auto [ed, st] : mp)
-        spread(1, Q, 1, st.first, Q, {ed.first, ed.second, st.second});
+    for (auto idx : st) {
+        auto [_, a, b] = queries[idx];
+        spread(1, N, 1, idx, N, Line(a, b));
+    }
 
-    auto dS = vector<disjointSet>(10, disjointSet(N));
-    solve(1, Q, 1, dS);
+    auto rt = LiChao::init(-1e9, 1e9);
+    solve(1, N, 1, rt);
 
-    for (auto [t, u, v, w] : queries) {
-        if (t <= 10) cout << t << '\n';
+    for (auto el : ans) {
+        if (el == -inf)
+            cout << "EMPTY\n";
+        else
+            cout << el << '\n';
     }
 
     return 0;
