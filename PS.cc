@@ -19,93 +19,90 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-#define x first
-#define y second
+class kdtree {
+   public:
+    vector<pli> vl[262145];
+    int nan[262145];
 
-pli operator-(const pli &l, const pli &r) { return {l.x - r.x, l.y - r.y}; }
+    void init(int n, int d, const vector<pli> &pts) {
+        if (n == 1) vl[n] = pts;
+        if (vl[n].size() <= 1) return;
 
-inline i64 ccw(pli p1, pli p2, pli p3) {
-    auto [x1, y1] = p2 - p1;
-    auto [x2, y2] = p3 - p1;
-    return x1 * y2 - x2 * y1;
-}
+        if (d % 2)
+            sort(iterall(vl[n]));
+        else
+            sort(iterall(vl[n]), [](pli a, pli b) {
+                return a.second != b.second ? a.second < b.second
+                                            : a.first < b.first;
+            });
 
-i64 dir(pli p1, pli p2, pli p3) {
-    auto c = ccw(p1, p2, p3);
-    if (c > 0) return 1;
-    if (c == 0) return 0;
-    return -1;
-}
+        auto mid = (vl[n].size() - 1) / 2;
+        for (int i = 0; i <= mid; i++) vl[n * 2].emplace_back(vl[n][i]);
+        for (int i = mid + 1; i < vl[n].size(); i++)
+            vl[n * 2 + 1].emplace_back(vl[n][i]);
 
-bool on_line(pli p1, pli p2, pli q) {
-    return ccw(p1, p2, q) == 0 && p1.x <= q.x && q.x <= p2.x && p1.y <= q.y &&
-           q.y <= p2.y;
-}
+        if (d % 2)
+            nan[n] = vl[n][mid].first;
+        else
+            nan[n] = vl[n][mid].second;
 
-bool sub(vector<pli> &l1, vector<pli> &l2) {
-    if(l1.size()==1) return true;
-    if(l1.size()==2) {
-        auto p1 = l1[0], p2 = l1[1];
-        vector<bool> ch(3);
+        init(n * 2, d + 1, pts);
+        init(n * 2 + 1, d + 1, pts);
+    }
 
-        for(auto q:l2) {
-            if(on_line(p1, p2, q)) return false;
+    inline i64 ab(i64 a) { return a > 0 ? a : -a; }
 
-            auto c = dir(p1, p2, q)+1;
-            if(c==1) continue;
-            if(ch[2-c]) return false;
-            ch[c] = true;        
+    inline i64 sq(i64 x) {
+        return x*x;
+    }
+
+    i64 dist(pli x, pli y) {
+        return (x.first - y.first) * (x.first - y.first) +
+               (x.second - y.second) * (x.second - y.second);
+    }
+
+    void query(int n, int d, i64 &m, const pli q) {
+        if (vl[n].size() == 1) {
+            if (dist(q, vl[n][0]) == 0) return;
+            m = min(m, dist(q, vl[n][0]));
+            return;
         }
 
-        return true;
-    }
-
-    vector<pli> uh, dh;
-    int un = 0, dn = 0;
-
-    sort(iterall(l1));
-    for (auto pt : l1) {
-        while (un >= 2 && ccw(uh[un - 2], uh[un - 1], pt) >= 0)
-            uh.pop_back(), --un;
-        uh.emplace_back(pt), ++un;
-    }
-
-    reverse(iterall(l1));
-    for (auto pt : l1) {
-        while (dn >= 2 && ccw(dh[dn - 2], dh[dn - 1], pt) >= 0)
-            dh.pop_back(), --dn;
-        dh.emplace_back(pt), ++dn;
-    }
-
-    vector<pli> hull = uh;
-    for (int i = 1; i < dn - 1; i++) hull.emplace_back(dh[i]);
-
-    int hs = un + dn - 2;
-    for (auto q : l2) {
-        for (int i = 0; i < hs; i++) {
-            auto p1 = hull[i];
-            auto p2 = hull[(i + 1) % hs];
-
-            if (on_line(p1, p2, q)) return false;
-            if (ccw(p1, p2, q) > 0) goto next;
+        if (d % 2) {
+            if (q.first <= nan[n]) {
+                query(n * 2, d + 1, m, q);
+                if (sq(nan[n] - q.first) < m) query(n * 2 + 1, d + 1, m, q);
+            } else {
+                query(n * 2 + 1, d + 1, m, q);
+                if (sq(q.first - nan[n]) < m) query(n * 2, d + 1, m, q);
+            }
+        } else {
+            if (q.second <= nan[n]) {
+                query(n * 2, d + 1, m, q);
+                if (sq(nan[n] - q.second) < m) query(n * 2 + 1, d + 1, m, q);
+            } else {
+                query(n * 2 + 1, d + 1, m, q);
+                if (sq(q.second - nan[n]) < m) query(n * 2, d + 1, m, q);
+            }
         }
-
-        return false;
-    next:;
     }
+};
 
-    return true;
-}
+void process() {
+    int N;
+    cin >> N;
 
-bool process() {
-    int N, M;
-    cin >> N >> M;
+    vector<pli> pt(N);
+    for (int i = 0; i < N; i++) cin >> pt[i].first >> pt[i].second;
 
-    vector<pli> l1(N), l2(M);
-    for (int i = 0; i < N; i++) cin >> l1[i].x >> l1[i].y;
-    for (int i = 0; i < M; i++) cin >> l2[i].x >> l2[i].y;
+    auto kd = kdtree();
+    kd.init(1, 1, pt);
 
-    return sub(l1, l2) && sub(l2, l1);    
+    for (auto el : pt) {
+        i64 m = numeric_limits<i64>::max();
+        kd.query(1, 1, m, el);
+        cout << m << '\n';
+    }
 }
 
 int main() {
@@ -116,7 +113,7 @@ int main() {
     int T;
     cin >> T;
 
-    for (int i = 0; i < T; i++) cout << (process() ? "YES" : "NO") << '\n';
+    for (int i = 0; i < T; i++) process();
 
     return 0;
 }
