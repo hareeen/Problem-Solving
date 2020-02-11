@@ -1,6 +1,8 @@
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
+#pragma GCC optimize ("O3")
+#pragma GCC optimize ("Ofast")
 
 using namespace std;
 using namespace __gnu_pbds;
@@ -19,90 +21,46 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class kdtree {
-   public:
-    vector<pli> vl[262145];
-    int nan[262145];
+i64 v[1000001], w[1000001];
 
-    void init(int n, int d, const vector<pli> &pts) {
-        if (n == 1) vl[n] = pts;
-        if (vl[n].size() <= 1) return;
-
-        if (d % 2)
-            sort(iterall(vl[n]));
-        else
-            sort(iterall(vl[n]), [](pli a, pli b) {
-                return a.second != b.second ? a.second < b.second
-                                            : a.first < b.first;
-            });
-
-        auto mid = (vl[n].size() - 1) / 2;
-        for (int i = 0; i <= mid; i++) vl[n * 2].emplace_back(vl[n][i]);
-        for (int i = mid + 1; i < vl[n].size(); i++)
-            vl[n * 2 + 1].emplace_back(vl[n][i]);
-
-        if (d % 2)
-            nan[n] = vl[n][mid].first;
-        else
-            nan[n] = vl[n][mid].second;
-
-        init(n * 2, d + 1, pts);
-        init(n * 2 + 1, d + 1, pts);
-    }
-
-    inline i64 ab(i64 a) { return a > 0 ? a : -a; }
-
-    inline i64 sq(i64 x) {
-        return x*x;
-    }
-
-    i64 dist(pli x, pli y) {
-        return (x.first - y.first) * (x.first - y.first) +
-               (x.second - y.second) * (x.second - y.second);
-    }
-
-    void query(int n, int d, i64 &m, const pli q) {
-        if (vl[n].size() == 1) {
-            if (dist(q, vl[n][0]) == 0) return;
-            m = min(m, dist(q, vl[n][0]));
-            return;
-        }
-
-        if (d % 2) {
-            if (q.first <= nan[n]) {
-                query(n * 2, d + 1, m, q);
-                if (sq(nan[n] - q.first) < m) query(n * 2 + 1, d + 1, m, q);
-            } else {
-                query(n * 2 + 1, d + 1, m, q);
-                if (sq(q.first - nan[n]) < m) query(n * 2, d + 1, m, q);
-            }
-        } else {
-            if (q.second <= nan[n]) {
-                query(n * 2, d + 1, m, q);
-                if (sq(nan[n] - q.second) < m) query(n * 2 + 1, d + 1, m, q);
-            } else {
-                query(n * 2 + 1, d + 1, m, q);
-                if (sq(q.second - nan[n]) < m) query(n * 2, d + 1, m, q);
-            }
-        }
-    }
-};
-
+i64 gcd(i64 a, i64 b) { return b ? gcd(b, a % b) : a; }
 void process() {
-    int N;
-    cin >> N;
+    i64 p, q, n;
+    cin >> p >> q >> n;
 
-    vector<pli> pt(N);
-    for (int i = 0; i < N; i++) cin >> pt[i].first >> pt[i].second;
+    p %= q;
 
-    auto kd = kdtree();
-    kd.init(1, 1, pt);
+    i64 g = gcd(p, q);
+    p /= g, q /= g;
 
-    for (auto el : pt) {
-        i64 m = numeric_limits<i64>::max();
-        kd.query(1, 1, m, el);
-        cout << m << '\n';
+    i64 ret = 0;
+    ret += (q * (q - 1) / 2 * (n / q));
+    n %= q;
+
+    i64 sq = sqrt(n);
+
+    for (i64 i = 0; i < sq; i++) v[i] = (p * i * sq % q);
+    sort(v, v + sq);
+
+    auto acc = accumulate(v, v + sq, 0LL);
+
+    for (i64 i = 0; i < sq; i++)
+        w[i] = i ? w[i - 1] + p : 0, w[i] = w[i] > q ? w[i] - q : w[i];
+    sort(w, w + sq);
+
+    i64 id = sq - 1;
+    for (i64 i = 0; i < sq; i++) {
+        while (id >= 0 && v[id] >= q - w[i]) --id;
+        ret -= ((sq - 1 - id) * q);
+        ret -= (p * i / q * q * sq);
     }
+
+    ret += (acc * sq);
+    ret += (p * sq * (sq - 1) / 2 * sq);
+
+    for (i64 i = sq * sq; i <= n; i++) ret += (p * i % q);
+
+    cout << ret * g << '\n';
 }
 
 int main() {
@@ -110,10 +68,10 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int T;
-    cin >> T;
+    int W;
+    cin >> W;
 
-    for (int i = 0; i < T; i++) process();
+    for (int i = 0; i < W; i++) process();
 
     return 0;
 }
