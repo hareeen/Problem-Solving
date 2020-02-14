@@ -1,8 +1,6 @@
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
-#pragma GCC optimize ("O3")
-#pragma GCC optimize ("Ofast")
 
 using namespace std;
 using namespace __gnu_pbds;
