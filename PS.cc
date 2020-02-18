@@ -19,138 +19,150 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class BIT {
+using qli = tuple<i64, i64, i64, i64>;
+#define pack(n) su[n], ls[n], rs[n], vl[n]
+
+const i64 inf = numeric_limits<i64>::max() / 4;
+
+class segTree {
    public:
-    vector<i64> v;
-    size_t sz;
+    vector<i64> su;
+    vector<i64> ls;
+    vector<i64> rs;
+    vector<i64> vl;
+    const i64 ini = -100001;
+    size_t SZ = 0;
 
-    BIT() {
-        v.resize((1 << 18) + 1);
-        sz = v.size();
+    segTree() {
+        const size_t s = (1 << 18) + 1;
+        su.resize(s);
+        ls.resize(s);
+        rs.resize(s);
+        vl.resize(s);
     }
 
-    void update(int i, i64 d) {
-        while (i < sz) v[i] += d, i += (i & -i);
+    qli mer(qli l, qli r) {
+        auto [lsu, lls, lrs, lvl] = l;
+        auto [rsu, rls, rrs, rvl] = r;
+
+        i64 tsu = lsu + rsu;
+        i64 tls = max(lls, lsu + rls);
+        i64 trs = max(rrs, rsu + lrs);
+        i64 tvl = max({tls, trs, lrs + rls, lvl, rvl});
+
+        return {tsu, tls, trs, tvl};
     }
 
-    i64 query(int i) {
-        i64 ret = 0;
-        while (i) ret += v[i], i -= (i & -i);
-        return ret;
+    void init(int s, int e, int n) {
+        if (n == 1) SZ = e;
+
+        if (s == e) {
+            vl[n] = ls[n] = rs[n] = 0;
+            su[n] = ini;
+            return;
+        }
+
+        init(s, (s + e) / 2, n * 2);
+        init((s + e) / 2 + 1, e, n * 2 + 1);
+        tie(pack(n)) = mer({pack(n * 2)}, {pack(n * 2 + 1)});
     }
 
-    i64 query(int l, int r) { return query(r) - (l ? query(l - 1) : 0); }
+    void update(int s, int e, int n, const int t, const i64 u = 1LL) {
+        if (t < s || e < t) return;
+
+        if (s == e) {
+            vl[n] = ls[n] = rs[n] = max(u, 0LL);
+            su[n] = u;
+            return;
+        }
+
+        update(s, (s + e) / 2, n * 2, t, u);
+        update((s + e) / 2 + 1, e, n * 2 + 1, t, u);
+        tie(pack(n)) = mer({pack(n * 2)}, {pack(n * 2 + 1)});
+    }
+
+    void update(const int t) { update(1, SZ, 1, t); }
+
+    qli query(int s, int e, int n, const int l, const int r) {
+        if (r < s || e < l) return {0, -inf, -inf, -inf};
+        if (l <= s && e <= r) return {pack(n)};
+        return mer(query(s, (s + e) / 2, n * 2, l, r),
+                   query((s + e) / 2 + 1, e, n * 2 + 1, l, r));
+    }
+
+    i64 query(const int l, const int r) {
+        return get<3>(query(1, SZ, 1, l, r));
+    }
 };
-
-void dfs(int h, int p, int &ord, vector<int> &in, vector<int> &out,
-         const vector<vector<int>> &adj) {
-    in[h] = ord;
-
-    for (auto t : adj[h]) {
-        if (t == p) continue;
-
-        ++ord;
-        dfs(t, h, ord, in, out, adj);
-    }
-
-    out[h] = ord;
-}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, K;
-    i64 J;
+    int N;
+    cin >> N;
 
-    cin >> N >> K >> J;
-
-    vector<vector<int>> adj(N + 1);
-    for (int u = 2; u <= N; u++) {
-        int v;
-        cin >> v;
-
-        adj[u].emplace_back(v);
-        adj[v].emplace_back(u);
+    vector<pli> hist(N);
+    for (int i = 0; i < N; i++) {
+        cin >> hist[i].first;
+        hist[i].second = i + 1;
     }
 
-    int ord = 1;
-    vector<int> in(N + 1), out(N + 1);
-    dfs(1, -1, ord, in, out, adj);
+    sort(iterall(hist), greater<>());
 
-    vector<i64> goal(N + 1);
-    vector<vector<int>> teams(N + 1);
-    vector<int> cont(N + 1);
-    for (int i = 1; i <= N; i++) {
-        int t;
-        cin >> t;
+    vector<i64> comp(N);
+    for (int i = 0; i < N; i++) comp[i] = hist[i].first;
+    reverse(iterall(comp));
+    comp.erase(unique(iterall(comp)), comp.end());
 
-        teams[t].emplace_back(i);
-        cont[i] = t;
-        goal[t] += J;
+    for (auto& [h, _] : hist) h = lower_bound(iterall(comp), h) - comp.begin();
+
+    int H = comp.size();
+
+    int Q;
+    cin >> Q;
+
+    vector<tli> queries(Q);
+    for (int i = 0; i < Q; i++) {
+        i64 l, r, w;
+        cin >> l >> r >> w;
+        queries[i] = {l, r, w};
     }
 
-    for (auto t = 0; t <= N; t++)
-        if (!goal[t]) goal[t] = numeric_limits<i64>::max();
-
-    vector<tli> queries;
-    for (int i = 0; i < K; i++) {
-        i64 a, b, c;
-        cin >> a >> b >> c;
-        queries.emplace_back(a, b, c);
-    }
-
-    sort(iterall(queries));
-
-    vector<i64> times;
-    for (auto [t, _, __] : queries) times.emplace_back(t);
-
-    times.erase(unique(iterall(times)), times.end());
-
-    for (auto &[t, _, __] : queries)
-        t = lower_bound(iterall(times), t) - times.begin();
-
-    auto Q = times.size();
-
-    vector<int> lo(N + 1, 0), hi(N + 1, Q);
+    vector<int> lo(Q), hi(Q, H);
     while (true) {
         bool flag = true;
-        vector<vector<int>> q(Q);
+        vector<vector<int>> proc(H + 1);
 
-        for (int i = 1; i <= N; i++) {
+        for (int i = 0; i < Q; i++) {
             if (lo[i] < hi[i]) {
                 flag = false;
-                q[(lo[i] + hi[i]) / 2].emplace_back(i);
+                proc[(lo[i] + hi[i] + 1) / 2].emplace_back(i);
             }
         }
 
         if (flag) break;
 
-        int p = 0;
-        auto biT = BIT();
-        for (int i = 0; i < Q; i++) {
-            while (p < K && get<0>(queries[p]) == i) {
-                auto [t, n, d] = queries[p];
-                d /= (out[n] - in[n] + 1);
-                biT.update(in[n], d);
-                biT.update(out[n] + 1, -d);
-                ++p;
-            }
+        auto sT = segTree();
+        sT.init(1, N, 1);
 
-            for (auto t : q[i]) {
-                i64 su = 0;
-                for (auto el : teams[t]) su += biT.query(in[el]);
-                if (su <= goal[t])
-                    lo[t] = i + 1;
+        int p = 0;
+        for (int h = H; h >= 0; --h) {
+            for (; p < N && hist[p].first == h; ++p) {
+                sT.update(hist[p].second);
+            }
+            for (auto i : proc[h]) {
+                auto [l, r, w] = queries[i];
+                if (sT.query(l, r) >= w)
+                    lo[i] = h;
                 else
-                    hi[t] = i;
+                    hi[i] = h - 1;
             }
         }
     }
 
-    for (int i = 1; i <= N; i++)
-        cout << (lo[cont[i]] == Q ? -1 : times[lo[cont[i]]]) << '\n';
+    for (int i = 0; i < Q; i++) cout << comp[lo[i]] << '\n';
 
     return 0;
 }
