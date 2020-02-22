@@ -19,143 +19,71 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-vector<i64> pzip;
+using qli = tuple<i64, i64, i64, i64>;
 
-class segTree {
-   public:
-    vector<i64> vl, lz;
-    size_t sz;
-
-    segTree(size_t _sz) {
-        vl.resize((1 << 20) + 1);
-        lz.resize((1 << 20) + 1);
-        sz = _sz;
-    }
-
-    void propagate(int s, int e, int n) {
-        if (!lz[n]) return;
-        vl[n] += (pzip[e] - pzip[s - 1]) * lz[n];
-
-        if (s != e) {
-            lz[n * 2] += lz[n];
-            lz[n * 2 + 1] += lz[n];
-        }
-
-        lz[n] = 0;
-    }
-
-    void update(int s, int e, int n, const int l, const int r) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return;
-        if (l <= s && e <= r) {
-            lz[n]++;
-            propagate(s, e, n);
-            return;
-        }
-
-        update(s, (s + e) / 2, n * 2, l, r);
-        update((s + e) / 2 + 1, e, n * 2 + 1, l, r);
-
-        vl[n] = vl[n * 2] + vl[n * 2 + 1];
-    }
-
-    void update(const int l, const int r) { update(1, sz, 1, l, r); }
-
-    i64 query(int s, int e, int n, const int l, const int r) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return vl[n];
-        return query(s, (s + e) / 2, n * 2, l, r) +
-               query((s + e) / 2 + 1, e, n * 2 + 1, l, r);
-    }
-
-    i64 query(const int l, const int r) { return query(1, sz, 1, l, r); }
-};
+inline i64 ccw(pli v1, pli v2) {
+    return v1.first * v2.second - v1.second * v2.first;
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    i64 N, M, Q;
-    cin >> N >> M >> Q;
+    int N;
+    cin >> N;
 
-    vector<tli> upds;
-    for (int i = 0; i < M; i++) {
-        i64 l, r, v;
-        cin >> l >> r >> v;
-        upds.emplace_back(v, l, r + 1);
-        pzip.emplace_back(l);
-        pzip.emplace_back(r + 1);
-    }
-    sort(iterall(upds));
+    vector<tli> lines;
+    for (int i = 0; i < N; i++) {
+        i64 l, r, y;
+        cin >> l >> r >> y;
 
-    vector<i64> zip;
-    for (auto [v, l, r] : upds) zip.emplace_back(v);
-    zip.erase(unique(iterall(zip)), zip.end());
-
-    for (auto& [v, l, r] : upds) v = lower_bound(iterall(zip), v) - zip.begin();
-
-    vector<tli> queries;
-    for (int i = 0; i < Q; i++) {
-        i64 l, r, j;
-        cin >> l >> r >> j;
-
-        queries.emplace_back(l, r + 1, j);
-        pzip.emplace_back(l);
-        pzip.emplace_back(r + 1);
+        if (l > r) swap(l, r);
+        lines.emplace_back(l, r, y);
     }
 
-    sort(iterall(pzip));
-    pzip.erase(unique(iterall(pzip)), pzip.end());
+    i64 ans = 0;
+    for (auto [LL, RR, YY] : lines) {
+        vector<pli> POINTS = {pli(LL, YY), pli(RR, YY)};
+        for (auto [dpx, dpy] : POINTS) {
+            i64 swp = RR - LL;
+            vector<qli> points;
 
-    for (auto& [v, l, r] : upds) {
-        l = lower_bound(iterall(pzip), l) - pzip.begin() + 1;
-        r = lower_bound(iterall(pzip), r) - pzip.begin();
-    }
-
-    for (auto& [l, r, j] : queries) {
-        l = lower_bound(iterall(pzip), l) - pzip.begin() + 1;
-        r = lower_bound(iterall(pzip), r) - pzip.begin();
-    }
-
-    const auto nu = zip.size();
-    vector<int> lo(Q), hi(Q, nu - 1);
-
-    while (true) {
-        bool flag = true;
-        vector<vector<int>> proc(nu);
-        for (int i = 0; i < Q; i++) {
-            if (lo[i] < hi[i]) {
-                flag = false;
-                proc[(lo[i] + hi[i]) / 2].emplace_back(i);
-            }
-        }
-
-        if (flag) break;
-
-        int p = 0;
-        auto sT = segTree(pzip.size() - 1);
-
-        for (int n = 0; n < nu; n++) {
-            while (p < M && n == get<0>(upds[p])) {
-                sT.update(get<1>(upds[p]), get<2>(upds[p]));
-                ++p;
+            int id = -1;
+            for (auto [ll, rr, yy] : lines) {
+                ++id;
+                if (yy == dpy) continue;
+                if (yy > dpy) {
+                    points.emplace_back(dpx * 2 - ll, dpy * 2 - yy, id, -1);
+                    points.emplace_back(dpx * 2 - rr, dpy * 2 - yy, id, 1);
+                } else {
+                    points.emplace_back(ll, yy, id, 1);
+                    points.emplace_back(rr, yy, id, -1);
+                }
             }
 
-            for (auto i : proc[n]) {
-                auto [l, r, j] = queries[i];
-                if (sT.query(l, r) < j)
-                    lo[i] = n + 1;
-                else
-                    hi[i] = n;
+            for (auto& [xx, yy, id, op] : points) {
+                xx -= dpx;
+                yy = dpy - yy;
+            }
+
+            sort(iterall(points), [](qli lhs, qli rhs) {
+                auto [lx, ly, li, lp] = lhs;
+                auto [rx, ry, ri, rp] = rhs;
+
+                auto c = ccw({lx, ly}, {rx, ry});
+                if (c != 0) return c < 0;
+                return lp > rp;
+            });
+
+            ans = max(ans, swp);
+            for (auto& [xx, yy, id, op] : points) {
+                swp += ((get<1>(lines[id]) - get<0>(lines[id])) * op);
+                ans = max(ans, swp);
             }
         }
     }
 
-    for (int i = 0; i < Q; i++) cout << zip[lo[i]] << '\n';
-
+    cout << ans << endl;
     return 0;
 }
