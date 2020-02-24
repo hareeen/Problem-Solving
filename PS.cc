@@ -19,120 +19,122 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class sqrtDecomp {
-   public:
-    int N, sq;
-    // sd[i] : sq*i ~ sq*(i+1) - 1 Inclusive
-    vector<int> vl, sd;
+void sl(int x, vector<int> &dt, vector<pi> &trace) {
+    dt[x] = dt[x + 1] = (6 - dt[x] - dt[x + 1]) % 3;
+    trace.emplace_back(x, x + 1);
+}
 
-    sqrtDecomp(int _N) {
-        N = _N;
-        sq = sqrt(N);
+vector<pi> solve1D(vector<int> &dt) {
+    vector<pi> ret;
+    int p = 0;
+    int N = dt.size();
 
-        vl.resize(N);
-        sd.resize(N / sq + 1);
-    }
+    if (N == 1) return ret;
 
-    void update(int t, int d) {
-        vl[t] += d;
-        sd[t / sq] += d;
-    }
-
-    int query() {
-        for (int i = N / sq; i >= 0; i--) {
-            if (!sd[i]) continue;
-            for (int j = min(i * sq + sq - 1, N - 1); j >= i * sq; j--) {
-                if (vl[j]) return j;
-            }
+    while (p < N - 3) {
+        if (dt[p] == dt[p + 1]) {
+            ++p;
+            continue;
         }
 
-        return 0;
+        if (dt[p + 1] != dt[p + 2]) {
+            sl(p + 1, dt, ret);
+        } else {
+            sl(p, dt, ret);
+            sl(p + 1, dt, ret);
+            sl(p, dt, ret);
+            sl(p + 1, dt, ret);
+            sl(p, dt, ret);
+            ++p;
+        }
     }
-};
+
+    if (dt[N - 1] != dt[N - 2]) sl(N - 2, dt, ret);
+
+    if (N % 3 == 0)
+        return ret;
+    else if (N % 3 == 1) {
+        if (dt[N - 3] != dt[N - 2]) {
+            sl(N - 3, dt, ret);
+            sl(N - 2, dt, ret);
+            sl(N - 3, dt, ret);
+            sl(N - 2, dt, ret);
+            sl(N - 3, dt, ret);
+        }
+    }
+
+    p = N - 1;
+    while (p > 1) {
+        if (dt[p] == dt[p - 1]) {
+            --p;
+            continue;
+        }
+
+        if (dt[p - 1] != dt[p - 2]) {
+            sl(p - 2, dt, ret);
+        } else {
+            sl(p - 1, dt, ret);
+            sl(p - 2, dt, ret);
+            sl(p - 1, dt, ret);
+            sl(p - 2, dt, ret);
+            sl(p - 1, dt, ret);
+            --p;
+        }
+    }
+
+    return ret;
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, K;
-    cin >> N, K = 2 * N;
+    int N, M;
+    cin >> N >> M;
 
-    vector<list<int>> v(K);
-    vector<int> arr(N + 1);
-    for (int i = 1; i <= N; i++) {
-        cin >> arr[i];
-        arr[i] += arr[i - 1];
-    }
-    for (auto &el : arr) el += N;
-
-    int Q;
-    cin >> Q;
-
-    vector<ti> queries;
-    for (int i = 0; i < Q; i++) {
-        int s, e;
-        cin >> s >> e;
-        queries.emplace_back(--s, e, i);
+    vector<vector<int>> mp(N, vector<int>(M));
+    for (int i = 0; i < N; i++) {
+        string s;
+        cin >> s;
+        for (int j = 0; j < M; j++) {
+            if (s[j] == 'R') mp[i][j] = 0;
+            if (s[j] == 'B') mp[i][j] = 1;
+            if (s[j] == 'Y') mp[i][j] = 2;
+        }
     }
 
-    int sqN = sqrt(N);
-    sort(iterall(queries), [sqN](const ti &l, const ti &r) {
-        auto [s1, e1, i1] = l;
-        auto [s2, e2, i2] = r;
-        s1 /= sqN;
-        s2 /= sqN;
-        return s1 == s2 ? e1 < e2 : s1 < s2;
-    });
+    {
+        int _su = 0;
+        for (auto &v : mp)
+            for (auto el : v) _su += el;
+        if (_su % 3 != 0 && (N % 3 == 0 || M % 3 == 0)) {
+            cout << -1 << endl;
+            return 0;
+        }
+    }
 
-    vector<int> ret(Q);
-    ti lq = {-1, -1, -1};
-    auto sD = sqrtDecomp(K);
-
-    for (auto [s, e, id] : queries) {
-        if (get<0>(lq) == -1) {
-            for (int i = s; i <= e; i++) v[arr[i]].emplace_back(i);
-            for (auto &l : v) {
-                if (l.empty()) continue;
-                sD.update(l.back() - l.front(), 1);
+    vector<pi> ord;
+    vector<int> dt;
+    for (int i = 0; i < N; i++) {
+        if (i % 2 == 0) {
+            for (int j = 0; j < M; j++) {
+                ord.emplace_back(i + 1, j + 1);
+                dt.emplace_back(mp[i][j]);
             }
         } else {
-            auto [ls, le, _] = lq;
-            if (s < ls)
-                for (int i = ls - 1; i >= s; i--) {
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].emplace_front(i);
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (le < e)
-                for (int i = le + 1; i <= e; i++) {
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].emplace_back(i);
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (s > ls)
-                for (int i = ls; i < s; i++) {
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].pop_front();
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (le > e)
-                for (int i = le; i > e; i--) {
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].pop_back();
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
+            for (int j = M - 1; j >= 0; j--) {
+                ord.emplace_back(i + 1, j + 1);
+                dt.emplace_back(mp[i][j]);
+            }
         }
-
-        lq = {s, e, id};
-        ret[id] = sD.query();
     }
 
-    copy(iterall(ret), ostream_iterator<decltype(ret)::value_type>(cout, "\n"));
+    auto ret = solve1D(dt);
+    cout << ret.size() << endl;
+    for (auto [p1, p2] : ret)
+        cout << ord[p1].first << " " << ord[p1].second << " " << ord[p2].first
+             << " " << ord[p2].second << '\n';
 
     return 0;
 }

@@ -1,4 +1,13 @@
-a,b,c=map(int,input().split())
-n=int(input())
-m=b-n
-print((m*a*a+n*c*c)/b-m*n)
+
+
+def solve1D(l: list):
+    N = len(l)
+    p = 0
+    ret = []
+    
+    while p<N-3:
+        if l[p+1] != l[p+2]:
+            ret.append([p+1, p+2])
+            l[p+1] = l[p+2] = (l[p+1]+l[p+2])%3
+        
+
