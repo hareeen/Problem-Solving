@@ -19,71 +19,120 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-using qli = tuple<i64, i64, i64, i64>;
+class sqrtDecomp {
+   public:
+    int N, sq;
+    // sd[i] : sq*i ~ sq*(i+1) - 1 Inclusive
+    vector<int> vl, sd;
 
-inline i64 ccw(pli v1, pli v2) {
-    return v1.first * v2.second - v1.second * v2.first;
-}
+    sqrtDecomp(int _N) {
+        N = _N;
+        sq = sqrt(N);
+
+        vl.resize(N);
+        sd.resize(N / sq + 1);
+    }
+
+    void update(int t, int d) {
+        vl[t] += d;
+        sd[t / sq] += d;
+    }
+
+    int query() {
+        for (int i = N / sq; i >= 0; i--) {
+            if (!sd[i]) continue;
+            for (int j = min(i * sq + sq - 1, N - 1); j >= i * sq; j--) {
+                if (vl[j]) return j;
+            }
+        }
+
+        return 0;
+    }
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, K;
+    cin >> N, K = 2 * N;
 
-    vector<tli> lines;
-    for (int i = 0; i < N; i++) {
-        i64 l, r, y;
-        cin >> l >> r >> y;
+    vector<list<int>> v(K);
+    vector<int> arr(N + 1);
+    for (int i = 1; i <= N; i++) {
+        cin >> arr[i];
+        arr[i] += arr[i - 1];
+    }
+    for (auto &el : arr) el += N;
 
-        if (l > r) swap(l, r);
-        lines.emplace_back(l, r, y);
+    int Q;
+    cin >> Q;
+
+    vector<ti> queries;
+    for (int i = 0; i < Q; i++) {
+        int s, e;
+        cin >> s >> e;
+        queries.emplace_back(--s, e, i);
     }
 
-    i64 ans = 0;
-    for (auto [LL, RR, YY] : lines) {
-        vector<pli> POINTS = {pli(LL, YY), pli(RR, YY)};
-        for (auto [dpx, dpy] : POINTS) {
-            i64 swp = RR - LL;
-            vector<qli> points;
+    int sqN = sqrt(N);
+    sort(iterall(queries), [sqN](const ti &l, const ti &r) {
+        auto [s1, e1, i1] = l;
+        auto [s2, e2, i2] = r;
+        s1 /= sqN;
+        s2 /= sqN;
+        return s1 == s2 ? e1 < e2 : s1 < s2;
+    });
 
-            int id = -1;
-            for (auto [ll, rr, yy] : lines) {
-                ++id;
-                if (yy == dpy) continue;
-                if (yy > dpy) {
-                    points.emplace_back(dpx * 2 - ll, dpy * 2 - yy, id, -1);
-                    points.emplace_back(dpx * 2 - rr, dpy * 2 - yy, id, 1);
-                } else {
-                    points.emplace_back(ll, yy, id, 1);
-                    points.emplace_back(rr, yy, id, -1);
+    vector<int> ret(Q);
+    ti lq = {-1, -1, -1};
+    auto sD = sqrtDecomp(K);
+
+    for (auto [s, e, id] : queries) {
+        if (get<0>(lq) == -1) {
+            for (int i = s; i <= e; i++) v[arr[i]].emplace_back(i);
+            for (auto &l : v) {
+                if (l.empty()) continue;
+                sD.update(l.back() - l.front(), 1);
+            }
+        } else {
+            auto [ls, le, _] = lq;
+            if (s < ls)
+                for (int i = ls - 1; i >= s; i--) {
+                    if (!v[arr[i]].empty())
+                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
+                    v[arr[i]].emplace_front(i);
+                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
                 }
-            }
-
-            for (auto& [xx, yy, id, op] : points) {
-                xx -= dpx;
-                yy = dpy - yy;
-            }
-
-            sort(iterall(points), [](qli lhs, qli rhs) {
-                auto [lx, ly, li, lp] = lhs;
-                auto [rx, ry, ri, rp] = rhs;
-
-                auto c = ccw({lx, ly}, {rx, ry});
-                if (c != 0) return c < 0;
-                return lp > rp;
-            });
-
-            ans = max(ans, swp);
-            for (auto& [xx, yy, id, op] : points) {
-                swp += ((get<1>(lines[id]) - get<0>(lines[id])) * op);
-                ans = max(ans, swp);
-            }
+            if (le < e)
+                for (int i = le + 1; i <= e; i++) {
+                    if (!v[arr[i]].empty())
+                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
+                    v[arr[i]].emplace_back(i);
+                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
+                }
+            if (s > ls)
+                for (int i = ls; i < s; i++) {
+                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
+                    v[arr[i]].pop_front();
+                    if (!v[arr[i]].empty())
+                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
+                }
+            if (le > e)
+                for (int i = le; i > e; i--) {
+                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
+                    v[arr[i]].pop_back();
+                    if (!v[arr[i]].empty())
+                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
+                }
         }
+
+        lq = {s, e, id};
+        ret[id] = sD.query();
     }
 
-    cout << ans << endl;
+    copy(iterall(ret), ostream_iterator<decltype(ret)::value_type>(cout, "\n"));
+
     return 0;
 }
