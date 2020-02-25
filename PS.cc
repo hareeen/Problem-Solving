@@ -19,122 +19,124 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-void sl(int x, vector<int> &dt, vector<pi> &trace) {
-    dt[x] = dt[x + 1] = (6 - dt[x] - dt[x + 1]) % 3;
-    trace.emplace_back(x, x + 1);
+class Node {
+   public:
+    i64 mx, mx2, mxct, su;
+    Node() { mx = 0, mx2 = 0, mxct = 0, su = 0; }
+    Node(i64 _mx, i64 _mx2, i64 _mxct, i64 _su) {
+        mx = _mx, mx2 = _mx2, mxct = _mxct, su = _su;
+    }
+};
+
+Node operator+(const Node& l, const Node& r) {
+    if (l.mx == r.mx)
+        return {l.mx, max(l.mx2, r.mx2), l.mxct + r.mxct, l.su + r.su};
+    if (l.mx > r.mx) return {l.mx, max(r.mx, l.mx2), l.mxct, l.su + r.su};
+    return {r.mx, max(l.mx, r.mx2), r.mxct, l.su + r.su};
 }
 
-vector<pi> solve1D(vector<int> &dt) {
-    vector<pi> ret;
-    int p = 0;
-    int N = dt.size();
+class segTreeBeats {
+   public:
+    vector<Node> vl;
+    int sz;
 
-    if (N == 1) return ret;
+    segTreeBeats(int _sz) {
+        vl.resize((1 << 21) + 1);
+        sz = _sz;
+    }
 
-    while (p < N - 3) {
-        if (dt[p] == dt[p + 1]) {
-            ++p;
-            continue;
-        }
+    Node init(int s, int e, int n, const vector<i64>& arr) {
+        if (s == e) return vl[n] = {arr[s], -1, 1, arr[s]};
+        return vl[n] = init(s, (s + e) / 2, n * 2, arr) +
+                       init((s + e) / 2 + 1, e, n * 2 + 1, arr);
+    }
 
-        if (dt[p + 1] != dt[p + 2]) {
-            sl(p + 1, dt, ret);
-        } else {
-            sl(p, dt, ret);
-            sl(p + 1, dt, ret);
-            sl(p, dt, ret);
-            sl(p + 1, dt, ret);
-            sl(p, dt, ret);
-            ++p;
+    void init(const vector<i64>& arr) { init(1, sz, 1, arr); }
+
+    void push(int s, int e, int n) {
+        if (s == e) return;
+        for (auto i : {n * 2, n * 2 + 1}) {
+            if (vl[n].mx < vl[i].mx) {
+                vl[i].su -= vl[i].mxct * (vl[i].mx - vl[n].mx);
+                vl[i].mx = vl[n].mx;
+            }
         }
     }
 
-    if (dt[N - 1] != dt[N - 2]) sl(N - 2, dt, ret);
-
-    if (N % 3 == 0)
-        return ret;
-    else if (N % 3 == 1) {
-        if (dt[N - 3] != dt[N - 2]) {
-            sl(N - 3, dt, ret);
-            sl(N - 2, dt, ret);
-            sl(N - 3, dt, ret);
-            sl(N - 2, dt, ret);
-            sl(N - 3, dt, ret);
+    void update(int s, int e, int n, const int l, const int r, const i64 u) {
+        push(s, e, n);
+        if (r < s || e < l || vl[n].mx <= u) return;
+        if (l <= s && e <= r && vl[n].mx2 < u) {
+            vl[n].su -= vl[n].mxct * (vl[n].mx - u);
+            vl[n].mx = u;
+            push(s, e, n);
+            return;
         }
+
+        update(s, (s + e) / 2, n * 2, l, r, u);
+        update((s + e) / 2 + 1, e, n * 2 + 1, l, r, u);
+        vl[n] = vl[n * 2] + vl[n * 2 + 1];
     }
 
-    p = N - 1;
-    while (p > 1) {
-        if (dt[p] == dt[p - 1]) {
-            --p;
-            continue;
-        }
-
-        if (dt[p - 1] != dt[p - 2]) {
-            sl(p - 2, dt, ret);
-        } else {
-            sl(p - 1, dt, ret);
-            sl(p - 2, dt, ret);
-            sl(p - 1, dt, ret);
-            sl(p - 2, dt, ret);
-            sl(p - 1, dt, ret);
-            --p;
-        }
+    void update(const int l, const int r, const i64 u) {
+        update(1, sz, 1, l, r, u);
     }
 
-    return ret;
-}
+    i64 query_max(int s, int e, int n, const int l, const int r) {
+        push(s, e, n);
+        if (r < s || e < l) return 0;
+        if (l <= s && e <= r) return vl[n].mx;
+        return max(query_max(s, (s + e) / 2, n * 2, l, r),
+                   query_max((s + e) / 2 + 1, e, n * 2 + 1, l, r));
+    }
+
+    i64 query_max(const int l, const int r) {
+        return query_max(1, sz, 1, l, r);
+    }
+
+    i64 query_sum(int s, int e, int n, const int l, const int r) {
+        push(s, e, n);
+        if (r < s || e < l) return 0;
+        if (l <= s && e <= r) return vl[n].su;
+        return query_sum(s, (s + e) / 2, n * 2, l, r) +
+               query_sum((s + e) / 2 + 1, e, n * 2 + 1, l, r);
+    }
+
+    i64 query_sum(const int l, const int r) {
+        return query_sum(1, sz, 1, l, r);
+    }
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, M;
-    cin >> N >> M;
+    int N;
+    cin >> N;
 
-    vector<vector<int>> mp(N, vector<int>(M));
-    for (int i = 0; i < N; i++) {
-        string s;
-        cin >> s;
-        for (int j = 0; j < M; j++) {
-            if (s[j] == 'R') mp[i][j] = 0;
-            if (s[j] == 'B') mp[i][j] = 1;
-            if (s[j] == 'Y') mp[i][j] = 2;
-        }
+    vector<i64> arr(N + 1);
+    for (int i = 1; i <= N; i++) cin >> arr[i];
+
+    auto sTB = segTreeBeats(N);
+    sTB.init(arr);
+
+    int Q;
+    cin >> Q;
+
+    for (int i = 0; i < Q; i++) {
+        int qt;
+        cin >> qt;
+
+        int l, r;
+        i64 x = 0;
+        cin >> l >> r;
+        if (qt == 1) cin >> x;
+
+        if (qt == 1) sTB.update(l, r, x);
+        if (qt == 2) cout << sTB.query_max(l, r) << '\n';
+        if (qt == 3) cout << sTB.query_sum(l, r) << '\n';
     }
-
-    {
-        int _su = 0;
-        for (auto &v : mp)
-            for (auto el : v) _su += el;
-        if (_su % 3 != 0 && (N % 3 == 0 || M % 3 == 0)) {
-            cout << -1 << endl;
-            return 0;
-        }
-    }
-
-    vector<pi> ord;
-    vector<int> dt;
-    for (int i = 0; i < N; i++) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < M; j++) {
-                ord.emplace_back(i + 1, j + 1);
-                dt.emplace_back(mp[i][j]);
-            }
-        } else {
-            for (int j = M - 1; j >= 0; j--) {
-                ord.emplace_back(i + 1, j + 1);
-                dt.emplace_back(mp[i][j]);
-            }
-        }
-    }
-
-    auto ret = solve1D(dt);
-    cout << ret.size() << endl;
-    for (auto [p1, p2] : ret)
-        cout << ord[p1].first << " " << ord[p1].second << " " << ord[p2].first
-             << " " << ord[p2].second << '\n';
 
     return 0;
 }
