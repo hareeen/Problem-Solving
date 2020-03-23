@@ -21,149 +21,150 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const i64 inf = numeric_limits<i64>::max() / 3;
+const int sz = 2000000;
+vector<int> graph1[2000000], graph2[2000000];
 
-class Line {
-   public:
-    i64 a, b;
-
-    Line() { a = 0, b = inf; }
-    Line(i64 _a, i64 _b) { a = _a, b = _b; }
-
-    inline i64 get(i64 x) { return a * x + b; }
-};
-
-class Node {
-   public:
-    i64 s, e;
-    Line v;
-    Node *l, *r;
-
-    Node() {
-        s = e = 0;
-        v = Line();
-        l = r = nullptr;
+void dfs1(int here, vector<bool> &vst, stack<int> &trace) {
+    for (auto there : graph1[here]) {
+        if (!vst[there]) vst[there] = true, dfs1(there, vst, trace);
     }
 
-    Node(i64 _s, i64 _e) {
-        s = _s, e = _e, v = Line();
-        l = r = nullptr;
-    }
-};
-
-namespace LiChao {
-stack<pair<Node*, Line>> trace;
-
-Node* init(i64 s, i64 e) { return new Node(s, e); }
-
-int update(Node* h, const Line v) {
-    auto s = h->s, e = h->e;
-    auto m = (s + e) / 2;
-
-    trace.push({h, h->v});
-
-    auto lo = h->v, hi = v;
-    if (lo.get(s) > hi.get(s)) swap(lo, hi);
-
-    if (lo.get(e) <= hi.get(e)) {
-        h->v = lo;
-        return 1;
-    }
-
-    if (lo.get(m) < hi.get(m)) {
-        h->v = lo;
-        if (!h->r) h->r = new Node(m + 1, e);
-        return update(h->r, hi) + 1;
-    } else {
-        h->v = hi;
-        if (!h->l) h->l = new Node(s, m);
-        return update(h->l, lo) + 1;
-    }
+    trace.push(here);
 }
 
-i64 query(Node* h, const i64 x) {
-    if (!h) return inf;
+void dfs2(int here, vector<bool> &vst, vector<int> &group) {
+    for (auto there : graph2[here]) {
+        if (!vst[there]) vst[there] = true, dfs2(there, vst, group);
+    }
 
-    auto s = h->s, e = h->e;
-    auto m = (s + e) / 2;
-
-    return min(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
+    group.push_back(here);
 }
 
-void revert(int rv) {
-    for (int i = 0; i < rv; i++) {
-        auto& [nd, vl] = trace.top();
+bool SCC(const int V) {
+    vector<bool> vst(V);
+    stack<int> trace;
+    for (int i = 0; i < V; i++) {
+        if (!vst[i]) vst[i] = true, dfs1(i, vst, trace);
+    }
+
+    for (int i = 0; i < V; i++) {
+        for (auto el : graph1[i]) graph2[el].emplace_back(i);
+        graph1[i].clear();
+    }
+
+    vector<int> sccn(V);
+    vst.clear(), vst.resize(V);
+    while (!trace.empty()) {
+        if (!vst[trace.top()]) {
+            vector<int> group;
+            vst[trace.top()] = true;
+            dfs2(trace.top(), vst, group);
+            for (auto el : group) sccn[el] = trace.size();
+        }
         trace.pop();
-
-        nd->v = vl;
     }
-}
 
-};  // namespace LiChao
+    for (int i = 0; i < V / 2; i++)
+        if (sccn[i] == sccn[i + V / 2]) return false;
+    return true;
+};
 
-namespace Tree {
-vector<vector<pli>> adj;
-vector<vector<int>> tr;
-vector<i64> dep, dp, vel, cost;
-Node* root;
-int N;
+void process() {
+    int N, M;
+    cin >> N >> M;
 
-void init(int _N) {
-    N = _N;
-    adj.resize(N + 1);
-    tr.resize(N + 1);
-    dep.resize(N + 1);
-    dp.resize(N + 1);
-    vel.resize(N + 1);
-    cost.resize(N + 1);
-    root = LiChao::init(0, 1e9);
-}
-
-void emplace_edge(int u, int v, i64 w) {
-    adj[u].emplace_back(v, w);
-    adj[v].emplace_back(u, w);
-}
-
-void rearrange(int h, int p) {
-    for (auto [t, w] : adj[h]) {
-        if (t == p) continue;
-        tr[h].emplace_back(t);
-        dep[t] = dep[h] + w;
-        rearrange(t, h);
+    vector<string> vec(N);
+    int bn = 0, wn = 0;
+    for (int i = 0; i < N; i++) {
+        cin >> vec[i];
+        for (auto el : vec[i]) {
+            if (el == 'B') bn++;
+            if (el == 'W') wn++;
+        }
     }
-}
 
-void solve(int h) {
-    dp[h] = LiChao::query(root, vel[h]) + dep[h] * vel[h] + cost[h];
-    if (h == 1) dp[h] = 0;
-    auto rev = LiChao::update(root, Line(-dep[h], dp[h]));
-    for (auto t : tr[h]) solve(t);
-    LiChao::revert(rev);
+    if (wn != bn * 2) {
+        cout << "NO" << endl;
+        return;
+    }
+
+    const int nt = 4 * N * M;
+    fill(graph2, graph2 + sz, vector<int>());
+    auto sat_append = [&](int u, int v, bool b = true) {
+        graph1[u].emplace_back(v);
+        if (b) graph1[(nt + v) % (2 * nt)].emplace_back((nt + u) % (2 * nt));
+    };
+
+    const int t = 0, l = 1, r = 2, b = 3;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            auto ch = (i * M + j) * 4;
+            if (i != 0) {
+                sat_append(ch + t, ch - M * 4 + b);
+                sat_append(ch - M * 4 + b, ch + t);
+            }
+            if (j != 0) {
+                sat_append(ch + l, ch - 4 + r);
+                sat_append(ch - 4 + r, ch + l);
+            }
+            if (j != M - 1) {
+                sat_append(ch + r, ch + 4 + l);
+                sat_append(ch + 4 + l, ch + r);
+            }
+            if (i != N - 1) {
+                sat_append(ch + b, ch + M * 4 + t);
+                sat_append(ch + M * 4 + t, ch + b);
+            }
+
+            if (vec[i][j] == '.') {
+                if (i != 0) sat_append(ch + t, nt + ch + t, false);
+                if (j != 0) sat_append(ch + l, nt + ch + l, false);
+                if (j != M - 1) sat_append(ch + r, nt + ch + r, false);
+                if (i != N - 1) sat_append(ch + b, nt + ch + b, false);
+                continue;
+            }
+
+            auto tc = i != 0 ? vec[i - 1][j] : '.';
+            auto lc = j != 0 ? vec[i][j - 1] : '.';
+            auto rc = j != M - 1 ? vec[i][j + 1] : '.';
+            auto bc = i != N - 1 ? vec[i + 1][j] : '.';
+
+            if (vec[i][j] == 'B') {
+                if (tc != 'W') sat_append(ch + t, nt + ch + t, false);
+                if (lc != 'W') sat_append(ch + l, nt + ch + l, false);
+                if (rc != 'W') sat_append(ch + r, nt + ch + r, false);
+                if (bc != 'W') sat_append(ch + b, nt + ch + b, false);
+                sat_append(ch + t, nt + ch + b);
+                sat_append(ch + l, nt + ch + r);
+                sat_append(nt + ch + r, ch + l);
+                sat_append(nt + ch + b, ch + t);
+            }
+            if (vec[i][j] == 'W') {
+                if (tc != 'B') sat_append(ch + t, nt + ch + t, false);
+                if (lc != 'B') sat_append(ch + l, nt + ch + l, false);
+                if (rc != 'B') sat_append(ch + r, nt + ch + r, false);
+                if (bc != 'B') sat_append(ch + b, nt + ch + b, false);
+                sat_append(ch + t, nt + ch + l);
+                sat_append(ch + t, nt + ch + r);
+                sat_append(ch + t, nt + ch + b);
+                sat_append(ch + l, nt + ch + r);
+                sat_append(ch + l, nt + ch + b);
+                sat_append(ch + r, nt + ch + b);
+            }
+        }
+    }
+    vec.clear();
+
+    cout << (SCC(2 * nt) ? "YES" : "NO") << endl;
 }
-}  // namespace Tree
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int T;
+    cin >> T;
 
-    Tree::init(N);
-    for (int i = 0; i < N - 1; i++) {
-        i64 u, v, w;
-        cin >> u >> v >> w;
-        Tree::emplace_edge(u, v, w);
-    }
-    Tree::rearrange(1, -1);
-
-    for (int i = 2; i <= N; i++) cin >> Tree::cost[i] >> Tree::vel[i];
-    Tree::solve(1);
-
-    copy(Tree::dp.begin() + 2, Tree::dp.end(),
-         ostream_iterator<i64>(cout, " "));
-    cout << endl;
-
-    return 0;
+    for (int i = 0; i < T; i++) process();
 }
