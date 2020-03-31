@@ -21,34 +21,85 @@ using ordered_set =
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class sqrtDecomp {
+class segTree {
    public:
-    int N, sq;
-    // sd[i] : [sq*i, sq*(i+1))
-    vector<int> vl, sd;
+    vector<int> vl;
+    vector<int> ls, lm;
+    int N;
 
-    sqrtDecomp(int _N) {
+    segTree() {
+        vl.clear();
+        ls.clear();
+        lm.clear();
+        N = 0;
+    }
+
+    segTree(int _N) {
+        const size_t sz = (1 << 19) + 1;
+        vl.resize(sz);
+        ls.resize(sz);
+        lm.resize(sz, 1);
+
         N = _N;
-        sq = sqrt(N);
-
-        vl.resize(N + 1);
-        sd.resize(N / sq + 1);
     }
 
-    void update(int t, int d) {
-        vl[t] += d;
-        sd[t / sq] += d;
-    }
+    void propagate(int s, int e, int n) {
+        if (lm[n] == 1 && ls[n] == 0) return;
+        vl[n] = vl[n] * lm[n] + (e - s + 1) * ls[n];
 
-    int query() {
-        for (int i = N / sq; i >= 0; i--) {
-            if (!sd[i]) continue;
-            for (int j = min(i * sq + sq - 1, N); j >= i * sq; j--)
-                if (vl[j]) return j;
+        if (s != e) {
+            lm[n * 2] *= lm[n], ls[n * 2] *= lm[n];
+            ls[n * 2] += ls[n];
+            lm[n * 2 + 1] *= lm[n], ls[n * 2 + 1] *= lm[n];
+            ls[n * 2 + 1] += ls[n];
         }
 
-        return 0;
+        lm[n] = 1, ls[n] = 0;
     }
+
+    void update(int s, int e, int n, const int l, const int r, const int us,
+                const int um) {
+        propagate(s, e, n);
+        if (r < s || e < l) return;
+        if (l <= s && e <= r) {
+            lm[n] = um, ls[n] = us;
+            propagate(s, e, n);
+            return;
+        }
+
+        int m = s + e >> 1;
+        update(s, m, n * 2, l, r, us, um);
+        update(m + 1, e, n * 2 + 1, l, r, us, um);
+        vl[n] = vl[n * 2] + vl[n * 2 + 1];
+    }
+    void update(const int l, const int r, const int us, const int um) {
+        update(1, N, 1, l, r, us, um);
+    }
+
+    void push0(const int l, const int r) { update(l, r, 0, 0); }
+    void push1(const int l, const int r) { update(l, r, 1, 0); }
+    void toggle(const int l, const int r) { update(l, r, 1, -1); }
+
+    int query(int s, int e, int n, const int l, const int r) {
+        propagate(s, e, n);
+        if (r < s || e < l) return 0;
+        if (l <= s && e <= r) return vl[n];
+
+        int m = s + e >> 1;
+        return query(s, m, n * 2, l, r) + query(m + 1, e, n * 2 + 1, l, r);
+    }
+    int query(const int l, const int r) { return query(1, N, 1, l, r); }
+
+    optional<int> mex(int s, int e, int n) {
+        propagate(s, e, n);
+        if (vl[n] == e - s + 1) return nullopt;
+        if (s == e) return make_optional(s);
+
+        int m = s + e >> 1;
+        if (auto res = mex(s, m, n * 2)) return res;
+        return mex(m + 1, e, n * 2 + 1);
+    }
+    auto mex() { return mex(1, N, 1); }
 };
 
 int main() {
@@ -56,84 +107,36 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, K;
-    cin >> N >> K;
-
-    vector<list<int>> v(K);
-    vector<int> arr(N + 1);
-    for (int i = 1; i <= N; i++) {
-        cin >> arr[i];
-        arr[i] += arr[i - 1];
-        arr[i] %= K;
-    }
-
     int Q;
     cin >> Q;
 
-    vector<ti> queries;
+    vector<i64> com = {1, static_cast<i64>(1e18) + 2};
+
+    vector<tli> queries(Q);
     for (int i = 0; i < Q; i++) {
-        int s, e;
-        cin >> s >> e;
-        queries.emplace_back(--s, e, i);
+        i64 t, l, r;
+        cin >> t >> l >> r;
+        ++r;
+        queries[i] = {t, l, r};
+        com.emplace_back(l);
+        com.emplace_back(r);
     }
 
-    int sqN = sqrt(N);
-    sort(iterall(queries), [sqN](const ti &l, const ti &r) {
-        auto [s1, e1, i1] = l;
-        auto [s2, e2, i2] = r;
-        s1 /= sqN;
-        s2 /= sqN;
-        return s1 == s2 ? e1 < e2 : s1 < s2;
-    });
+    sort(iterall(com));
+    com.erase(unique(iterall(com)), com.end());
 
-    vector<int> ret(Q);
-    ti lq = {-1, -1, -1};
-    auto sD = sqrtDecomp(N);
+    int N = com.size();
+    auto sT = segTree(N);
+    for (auto [t, L, R] : queries) {
+        int l = lower_bound(iterall(com), L) - com.begin() + 1;
+        int r = lower_bound(iterall(com), R) - com.begin();
 
-    for (auto [s, e, id] : queries) {
-        if (get<0>(lq) == -1) {
-            for (int i = s; i <= e; i++) v[arr[i]].emplace_back(i);
-            for (const auto &l : v) {
-                if (l.empty()) continue;
-                sD.update(l.back() - l.front(), 1);
-            }
-        } else {
-            auto [ls, le, _] = lq;
-            if (s < ls)
-                for (int i = ls - 1; i >= s; i--) {
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].emplace_front(i);
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (le < e)
-                for (int i = le + 1; i <= e; i++) {
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].emplace_back(i);
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (s > ls)
-                for (int i = ls; i < s; i++) {
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].pop_front();
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-            if (le > e)
-                for (int i = le; i > e; i--) {
-                    sD.update(v[arr[i]].back() - v[arr[i]].front(), -1);
-                    v[arr[i]].pop_back();
-                    if (!v[arr[i]].empty())
-                        sD.update(v[arr[i]].back() - v[arr[i]].front(), 1);
-                }
-        }
+        if (t == 1) sT.push1(l, r);
+        if (t == 2) sT.push0(l, r);
+        if (t == 3) sT.toggle(l, r);
 
-        lq = {s, e, id};
-        ret[id] = sD.query();
+        cout << com[sT.mex().value() - 1] << '\n';
     }
-
-    copy(iterall(ret), ostream_iterator<decltype(ret)::value_type>(cout, "\n"));
 
     return 0;
 }
