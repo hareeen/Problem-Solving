@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
+
 #pragma GCC optimize("Ofast")
 #pragma GCC optimize("unroll-loops")
 
@@ -14,92 +15,75 @@ using pli = pair<i64, i64>;
 using ti = tuple<int, int, int>;
 using tli = tuple<i64, i64, i64>;
 
-template <class T>
-using ordered_set =
-    tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
+template<class T>
+using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
 
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class segTree {
-   public:
-    vector<int> vl;
-    vector<int> ls, lm;
-    int N;
+class Node {
+public:
+    int s, e, v;
+    Node *l, *r;
 
-    segTree() {
-        vl.clear();
-        ls.clear();
-        lm.clear();
-        N = 0;
+    Node() {
+        s = e = v = 0;
+        l = r = nullptr;
     }
 
-    segTree(int _N) {
-        const size_t sz = (1 << 19) + 1;
-        vl.resize(sz);
-        ls.resize(sz);
-        lm.resize(sz, 1);
-
-        N = _N;
+    Node(int _s, int _e, int _v) {
+        s = _s, e = _e, v = _v;
+        l = r = nullptr;
     }
 
-    void propagate(int s, int e, int n) {
-        if (lm[n] == 1 && ls[n] == 0) return;
-        vl[n] = vl[n] * lm[n] + (e - s + 1) * ls[n];
-
-        if (s != e) {
-            lm[n * 2] *= lm[n], ls[n * 2] *= lm[n];
-            ls[n * 2] += ls[n];
-            lm[n * 2 + 1] *= lm[n], ls[n * 2 + 1] *= lm[n];
-            ls[n * 2 + 1] += ls[n];
-        }
-
-        lm[n] = 1, ls[n] = 0;
+    Node(int _s, int _e, int _v, Node *_l, Node *_r) {
+        s = _s, e = _e, v = _v;
+        l = _l, r = _r;
     }
+};
 
-    void update(int s, int e, int n, const int l, const int r, const int us,
-                const int um) {
-        propagate(s, e, n);
-        if (r < s || e < l) return;
-        if (l <= s && e <= r) {
-            lm[n] = um, ls[n] = us;
-            propagate(s, e, n);
-            return;
-        }
+namespace PST {
+    Node *init(int s, int e) {
+        if (s == e) return new Node(s, e, 0);
 
         int m = s + e >> 1;
-        update(s, m, n * 2, l, r, us, um);
-        update(m + 1, e, n * 2 + 1, l, r, us, um);
-        vl[n] = vl[n * 2] + vl[n * 2 + 1];
-    }
-    void update(const int l, const int r, const int us, const int um) {
-        update(1, N, 1, l, r, us, um);
+        auto l = init(s, m), r = init(m + 1, e);
+        return new Node(s, e, l->v + r->v, l, r);
     }
 
-    void push0(const int l, const int r) { update(l, r, 0, 0); }
-    void push1(const int l, const int r) { update(l, r, 1, 0); }
-    void toggle(const int l, const int r) { update(l, r, 1, -1); }
+    Node *update(Node *h, const int t, const int d) {
+        auto s = h->s, e = h->e, v = h->v;
+        if (t < s || e < t) return h;
+        if (s == e) return new Node(s, e, v + d);
 
-    int query(int s, int e, int n, const int l, const int r) {
-        propagate(s, e, n);
+        int m = s + e >> 1;
+        auto l = update(h->l, t, d), r = update(h->r, t, d);
+        return new Node(s, e, v + d, l, r);
+    }
+
+    int query(Node *h, const int l, const int r) {
+        auto s = h->s, e = h->e, v = h->v;
         if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return vl[n];
-
-        int m = s + e >> 1;
-        return query(s, m, n * 2, l, r) + query(m + 1, e, n * 2 + 1, l, r);
+        if (l <= s && e <= r) return v;
+        return query(h->l, l, r) + query(h->r, l, r);
     }
-    int query(const int l, const int r) { return query(1, N, 1, l, r); }
 
-    optional<int> mex(int s, int e, int n) {
-        propagate(s, e, n);
-        if (vl[n] == e - s + 1) return nullopt;
-        if (s == e) return make_optional(s);
-
-        int m = s + e >> 1;
-        if (auto res = mex(s, m, n * 2)) return res;
-        return mex(m + 1, e, n * 2 + 1);
+    int q2(Node *lo, Node *hi, const int x, int b = 18) {
+        if (b < 0) return lo->s;
+        if (x & (1 << b)) {
+            if (lo->l->v != hi->l->v) return q2(lo->l, hi->l, x, b - 1);
+            return q2(lo->r, hi->r, x, b - 1);
+        } else {
+            if (lo->r->v != hi->r->v) return q2(lo->r, hi->r, x, b - 1);
+            return q2(lo->l, hi->l, x, b - 1);
+        }
     }
-    auto mex() { return mex(1, N, 1); }
+
+    int q5(Node *lo, Node *hi, int x, int b = 18) {
+        if (b < 0) return lo->s;
+        if (hi->l->v - lo->l->v >= x) return q5(lo->l, hi->l, x, b - 1);
+        return q5(lo->r, hi->r, x - hi->l->v + lo->l->v, b - 1);
+    }
 };
 
 int main() {
@@ -107,35 +91,31 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
+    vector<Node *> roots(1, PST::init(0, (1 << 19) - 1));
+
     int Q;
     cin >> Q;
 
-    vector<i64> com = {1, static_cast<i64>(1e18) + 2};
-
-    vector<tli> queries(Q);
     for (int i = 0; i < Q; i++) {
-        i64 t, l, r;
-        cin >> t >> l >> r;
-        ++r;
-        queries[i] = {t, l, r};
-        com.emplace_back(l);
-        com.emplace_back(r);
-    }
+        int qt, L, R, x;
+        cin >> qt;
 
-    sort(iterall(com));
-    com.erase(unique(iterall(com)), com.end());
-
-    int N = com.size();
-    auto sT = segTree(N);
-    for (auto [t, L, R] : queries) {
-        int l = lower_bound(iterall(com), L) - com.begin() + 1;
-        int r = lower_bound(iterall(com), R) - com.begin();
-
-        if (t == 1) sT.push1(l, r);
-        if (t == 2) sT.push0(l, r);
-        if (t == 3) sT.toggle(l, r);
-
-        cout << com[sT.mex().value() - 1] << '\n';
+        if (qt == 1) {
+            cin >> x;
+            roots.emplace_back(PST::update(roots.back(), x, 1));
+        } else if (qt == 2) {
+            cin >> L >> R >> x;
+            cout << PST::q2(roots[L - 1], roots[R], x) << '\n';
+        } else if (qt == 3) {
+            cin >> x;
+            roots.erase(roots.end() - x, roots.end());
+        } else if (qt == 4) {
+            cin >> L >> R >> x;
+            cout << PST::query(roots[R], 0, x) - PST::query(roots[L - 1], 0, x) << '\n';
+        } else if (qt == 5) {
+            cin >> L >> R >> x;
+            cout << PST::q5(roots[L - 1], roots[R], x) << '\n';
+        }
     }
 
     return 0;
