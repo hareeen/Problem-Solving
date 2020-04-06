@@ -21,102 +21,118 @@ using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statisti
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class Node {
+tli ext_euc(i64 a, i64 b) {
+    if (b == 0) return {a, 1, 0};
+    auto[g, x, y] = ext_euc(b, a % b);
+    return {g, y, x - (a / b) * y};
+}
+
+class strHash {
+private:
+    size_t len;
+    i64 mod, hs, inv;
+    vector<i64> hm, exp;
+    list<i64> str;
 public:
-    int s, e, v;
-    Node *l, *r;
-
-    Node() {
-        s = e = v = 0;
-        l = r = nullptr;
+    strHash() {
+        mod = 1e9 + 9;
+        len = hs = inv = 0;
     }
 
-    Node(int _s, int _e, int _v) {
-        s = _s, e = _e, v = _v;
-        l = r = nullptr;
+    strHash(const vector<i64> &_hm, int maxLength, i64 p = 11, i64 _mod = 1e9 + 9) {
+        hm = _hm;
+        mod = _mod;
+        exp.emplace_back(1);
+        for (int i = 0; i < maxLength; i++) exp.emplace_back(exp.back() * p), exp.back() %= mod;
+        inv = get<1>(ext_euc(p, mod));
+        len = hs = 0;
     }
 
-    Node(int _s, int _e, int _v, Node *_l, Node *_r) {
-        s = _s, e = _e, v = _v;
-        l = _l, r = _r;
+    void emplace_front(char c) {
+        hs *= exp[1];
+        hs += hm[c - 'a'];
+        hs %= mod;
+        str.emplace_front(c);
+        len++;
+    }
+
+    void emplace_back(char c) {
+        hs += hm[c - 'a'] * exp[len];
+        hs %= mod;
+        str.emplace_back(c);
+        len++;
+    }
+
+    char pop_front() {
+        auto c = str.front();
+        hs -= hm[c - 'a'];
+        hs *= inv;
+        hs %= mod;
+        if (hs < 0) hs += mod;
+        str.pop_front();
+        len--;
+
+        return c;
+    }
+
+    char pop_back() {
+        auto c = str.back();
+        hs -= hm[c - 'a'] * exp[len - 1];
+        hs %= mod;
+        if (hs < 0) hs += mod;
+        str.pop_back();
+        len--;
+
+        return c;
+    }
+
+    bool operator==(const strHash &tar) {
+        return hs == tar.hs;
+    }
+
+    size_t operator+(const strHash &tar) {
+        return len + tar.len;
+    }
+
+    void print() {
+        copy(iterall(str), ostream_iterator<char>(cout, ""));
+        cout<<endl;
     }
 };
 
-namespace PST {
-    Node *init(int s, int e) {
-        if (s == e) return new Node(s, e, 0);
-
-        int m = s + e >> 1;
-        auto l = init(s, m), r = init(m + 1, e);
-        return new Node(s, e, l->v + r->v, l, r);
-    }
-
-    Node *update(Node *h, const int t, const int d) {
-        auto s = h->s, e = h->e, v = h->v;
-        if (t < s || e < t) return h;
-        if (s == e) return new Node(s, e, v + d);
-
-        int m = s + e >> 1;
-        auto l = update(h->l, t, d), r = update(h->r, t, d);
-        return new Node(s, e, v + d, l, r);
-    }
-
-    int query(Node *h, const int l, const int r) {
-        auto s = h->s, e = h->e, v = h->v;
-        if (r < s || e < l) return 0;
-        if (l <= s && e <= r) return v;
-        return query(h->l, l, r) + query(h->r, l, r);
-    }
-
-    int q2(Node *lo, Node *hi, const int x, int b = 18) {
-        if (b < 0) return lo->s;
-        if (x & (1 << b)) {
-            if (lo->l->v != hi->l->v) return q2(lo->l, hi->l, x, b - 1);
-            return q2(lo->r, hi->r, x, b - 1);
-        } else {
-            if (lo->r->v != hi->r->v) return q2(lo->r, hi->r, x, b - 1);
-            return q2(lo->l, hi->l, x, b - 1);
-        }
-    }
-
-    int q5(Node *lo, Node *hi, int x, int b = 18) {
-        if (b < 0) return lo->s;
-        if (hi->l->v - lo->l->v >= x) return q5(lo->l, hi->l, x, b - 1);
-        return q5(lo->r, hi->r, x - hi->l->v + lo->l->v, b - 1);
-    }
-};
+const vector<i64> hm = {6455536, 8266088, 8148826, 4806171, 5649282, 6090469, 8112641, 9019150, 8063633, 6084972,
+                        3230053, 8319456, 1232075, 5334896, 3918192, 5261805, 2865199, 2248845, 5811111, 1280309,
+                        9237435, 1079389, 4800858, 4388579, 8407711, 3002864};
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    vector<Node *> roots(1, PST::init(0, (1 << 19) - 1));
+    int N;
+    cin >> N;
+    string s;
+    cin >> s;
 
-    int Q;
-    cin >> Q;
-
-    for (int i = 0; i < Q; i++) {
-        int qt, L, R, x;
-        cin >> qt;
-
-        if (qt == 1) {
-            cin >> x;
-            roots.emplace_back(PST::update(roots.back(), x, 1));
-        } else if (qt == 2) {
-            cin >> L >> R >> x;
-            cout << PST::q2(roots[L - 1], roots[R], x) << '\n';
-        } else if (qt == 3) {
-            cin >> x;
-            roots.erase(roots.end() - x, roots.end());
-        } else if (qt == 4) {
-            cin >> L >> R >> x;
-            cout << PST::query(roots[R], 0, x) - PST::query(roots[L - 1], 0, x) << '\n';
-        } else if (qt == 5) {
-            cin >> L >> R >> x;
-            cout << PST::q5(roots[L - 1], roots[R], x) << '\n';
-        }
+    auto hl1 = strHash(hm, N / 2), hl2 = strHash(hm, N / 2);
+    auto hr1 = strHash(hm, N / 2), hr2 = strHash(hm, N / 2);
+    for (int i = 0; i < N / 2; i++) {
+        hl1.emplace_back(s[i]);
+        hr1.emplace_back(s[i + (N + 1) / 2]);
     }
 
+    int cur = N / 2;
+    size_t res = 0;
+    for (int i = N / 2; i; --i) {
+        if (hl1 == hr1) res = max(res, hl1 + hl2);
+
+        hl2.emplace_front(hl1.pop_back());
+        hr2.emplace_back(hr1.pop_front());
+
+        if (cur < N / 2) hl2.emplace_back(s[cur]), hr2.emplace_front(s[N - 1 - cur]), ++cur;
+        while (!(hl2 == hr2)) hl2.pop_back(), hr2.pop_front(), --cur;
+    }
+
+    cout << res << endl;
     return 0;
 }
