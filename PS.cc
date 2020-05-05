@@ -21,210 +21,148 @@ using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statisti
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class Node {
+class disjointSet {
+private:
+    vector<int> p;
 public:
-    int s, e;
-    int v;
-    Node *l, *r;
-
-    Node() {
-        s = e = v = 0;
-        l = r = nullptr;
+    explicit disjointSet(int N) {
+        p.clear();
+        p.resize(N + 1);
+        for (int i = 1; i <= N; i++) p[i] = i;
     }
 
-    Node(int _s, int _e, int _v) {
-        s = _s, e = _e, v = _v;
-        l = r = nullptr;
+    virtual void reset() {
+        for (int i = 0; i < p.size(); i++) p[i] = i;
     }
 
-    Node(int _s, int _e, int _v, Node *_l, Node *_r) {
-        s = _s, e = _e, v = _v;
-        l = _l, r = _r;
-    }
-};
-
-namespace psegTree {
-    Node *init(int s, int e, const vector<int> &arr) {
-        if (s == e)
-            return new Node(s, e, arr[s]);
-        else {
-            auto l = init(s, (s + e) / 2, arr);
-            auto r = init((s + e) / 2 + 1, e, arr);
-            return new Node(s, e, l->v + r->v, l, r);
-        }
+    virtual int find(int u) {
+        return p[u] = (p[u] == u ? u : find(p[u]));
     }
 
-    Node *update(Node *h, const int t, const int d) {
-        int s = h->s, e = h->e;
-        if (t < s || e < t)
-            return h;
-        else if (s == e)
-            return new Node(s, e, h->v + d, h->l, h->r);
-        else {
-            auto l = update(h->l, t, d);
-            auto r = update(h->r, t, d);
-            return new Node(s, e, l->v + r->v, l, r);
-        }
+    virtual void merge(int u, int v) {
+        p[find(v)] = p[find(u)];
     }
 
-    int query(Node *h, const int l, const int r) {
-        int s = h->s, e = h->e;
-        if (r < s || e < l)
-            return 0;
-        else if (l <= s && e <= r)
-            return h->v;
-        else
-            return query(h->l, l, r) + query(h->r, l, r);
+    virtual bool sset(int u, int v) {
+        return find(u) == find(v);
     }
 };
 
-namespace TREE {
-
-    int N;
-    vector<int> adj[100001], tr[100001], spt[100001];
-    vector<int> dep, sz;
-    vector<int> in, out;
-    vector<int> ord;
-    vector<Node *> sT;
-
-    int hld_sz, order;
-
-    void init(int _N) {
-        N = _N;
-
-        dep.resize(N + 1), sz.resize(N + 1);
-
-        in.resize(N + 1), out.resize(N + 1);
-
-        vector<int> ini(N + 1);
-        sT.emplace_back(psegTree::init(1, N, ini));
+class disjointSet2d : disjointSet {
+private:
+    int N, M;
+public:
+    disjointSet2d(int _N, int _M) : disjointSet(4 * _N * _M) {
+        N = _N, M = _M;
     }
 
-    void emplace_edge(int u, int v) {
-        adj[u].emplace_back(v);
-        adj[v].emplace_back(u);
+    int get(int x, int y) {
+        return (x * 2 * M + y) * 2;
     }
 
-    // dfs1: adj reconstruct & size
-    void dfs1(int h, int p) {
-        sz[h] = 1;
-        for (auto t : adj[h]) {
-            if (t == p) continue;
-
-            dfs1(t, h);
-            sz[h] += sz[t];
-            tr[h].emplace_back(t);
-        }
+    void reset() final {
+        disjointSet::reset();
     }
 
-    // dfs2: sparse table & depth
-    void dfs2(int h, int p) {
-        if (p == -1)
-            dep[h] = 1;
-        else
-            dep[h] = dep[p] + 1, spt[h].emplace_back(p);
-
-        for (int i = 1; (1 << i) < dep[h]; i++)
-            spt[h].emplace_back(spt[spt[h][i - 1]][i - 1]);
-        for (auto t : tr[h]) dfs2(t, h);
+    int find(int x, int y) {
+        return disjointSet::find(get(x, y));
     }
 
-    // dfs3: dfs ordering
-    void dfs3(int h, bool _ini = false) {
-        if (_ini) {
-            order = 0;
-            hld_sz = 0;
-        }
-
-        in[h] = ++order;
-        ord.emplace_back(h);
-        for (auto t:tr[h]) dfs3(t);
-        out[h] = order;
+    void merge(int x, int y) final {
+        auto h = get(x, y);
+        if (x) disjointSet::merge(h, h - 2 * M);
+        if (y) disjointSet::merge(h, h - 1);
+        disjointSet::merge(h, h + 2 * M);
+        disjointSet::merge(h, h + 1);
     }
 
-    int lca(int u, int v) {
-        if (dep[u] > dep[v]) swap(u, v);
-
-        int p = spt[v].size() - 1;
-        while (dep[u] < dep[v]) {
-            while (dep[v] - (1 << p) < dep[u]) --p;
-            v = spt[v][p];
-        }
-
-        p = spt[v].size() - 1;
-        while (true) {
-            if (u == v) return v;
-            if (spt[u][0] == spt[v][0]) return spt[v][0];
-            while (spt[u][p] == spt[v][p]) --p;
-            u = spt[u][p], v = spt[v][p];
-
-            p = min(p, static_cast<int>(spt[v].size()) - 1);
-        }
+    bool sset(int x1, int y1, int x2, int y2) {
+        return disjointSet::sset(get(x1, y1), get(x2, y2));
     }
+};
 
-    void seginit(const vector<int> &wcp) {
-        for (int i = 1; i <= N; i++) {
-            auto n = ord[i - 1];
-            auto p = (n == 1 ? 0 : spt[n][0]);
-
-            sT.emplace_back(psegTree::update(sT[in[p]], wcp[n - 1], 1));
-        }
-    }
-
-    int solve(Node *t1, Node *t2, Node *t3, Node *t4, const int x) {
-        if (!t1->l) return t1->s;
-
-        auto v = t1->l->v + t2->l->v - t3->l->v - (t4 ? t4->l->v : 0);
-        if (v < x) return solve(t1->r, t2->r, t3->r, t4 ? t4->r : nullptr, x - v);
-        else return solve(t1->l, t2->l, t3->l, t4 ? t4->l : nullptr, x);
-    }
-
-    int solve(int u, int v, int t) {
-        // cout << "asdf" << endl;
-        auto l = lca(u, v);
-        Node *t1 = sT[in[u]];
-        Node *t2 = sT[in[v]];
-        Node *t3 = sT[in[l]];
-        Node *t4 = (l == 1 ? nullptr : sT[in[spt[l][0]]]);
-        // cout << "asdf" << endl;
-        return solve(t1, t2, t3, t4, t);
-    }
-}
+using qi = tuple<int, int, int, int>;
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, Q;
-    cin >> N >> Q;
+    int N, M, Q;
+    cin >> N >> M >> Q;
 
-    vector<int> wei(N), cpn, wcp(N);
-    for (int i = 0; i < N; i++) cin >> wei[i];
-    cpn = wei;
-    sort(iterall(cpn));
-    for (int i = 0; i < N; i++) wcp[i] = lower_bound(iterall(cpn), wei[i]) - cpn.begin() + 1;
-
-
-    TREE::init(N);
-
-    for (int i = 0; i < N - 1; i++) {
-        int u, v;
-        cin >> u >> v;
-        TREE::emplace_edge(u, v);
+    vector<int> zip;
+    vector<vector<int>> hei(N, vector<int>(M));
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            cin >> hei[i][j];
+            zip.emplace_back(hei[i][j]);
+        }
     }
 
-    TREE::dfs1(1, -1);
-    TREE::dfs2(1, -1);
-    TREE::dfs3(1, true);
+    sort(iterall(zip));
+    zip.erase(unique(iterall(zip)), zip.end());
+    const int Z = zip.size();
 
-    TREE::seginit(wcp);
+    for (auto &v: hei)
+        for (auto &el: v)
+            el = distance(zip.begin(), lower_bound(iterall(zip), el));
+
+    vector<ti> updque;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < M; j++)
+            updque.emplace_back(hei[i][j], i, j);
+    sort(iterall(updque));
+
+    vector<qi> queries;
+    for (int i = 0; i < Q; i++) {
+        int x1, y1, x2, y2;
+        cin >> x1 >> y1 >> x2 >> y2;
+        --x1, --y1, --x2, --y2;
+        queries.emplace_back(x1, y1, x2, y2);
+    }
+
+    auto dS = disjointSet2d(N, M);
+    vector<int> st(Q, 0), ed(Q, Z - 1);
 
     for (int i = 0; i < Q; i++) {
-        int u, v, t;
-        cin >> u >> v >> t;
-        cout << cpn[TREE::solve(u, v, t) - 1] << '\n';
+        auto[x1, y1, x2, y2] = queries[i];
+        if (x1 == x2 && y1 == y2) st[i] = ed[i] = hei[x1][y1];
     }
 
+    while (true) {
+        vector<vector<int>> pbs(Z);
+        bool loopEnd = true;
+        auto qptr = updque.begin();
+
+        dS.reset();
+
+        for (int i = 0; i < Q; i++) {
+            if (st[i] != ed[i]) {
+                loopEnd = false;
+                pbs[(st[i] + ed[i]) / 2].emplace_back(i);
+            }
+        }
+
+        if (loopEnd) break;
+
+        for (int i = 0; i < Z; i++) {
+            while (qptr != updque.end()) {
+                auto[h, x, y] = *qptr;
+                if (h != i) break;
+
+                dS.merge(x, y);
+                ++qptr;
+            }
+
+            for (auto j: pbs[i]) {
+                auto[x1, y1, x2, y2] = queries[j];
+                if (dS.sset(x1, y1, x2, y2)) ed[j] = i;
+                else st[j] = i + 1;
+            }
+        }
+    }
+
+    for (auto el: st) cout << zip[el] << '\n';
     return 0;
 }
