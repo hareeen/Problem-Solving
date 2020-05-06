@@ -21,148 +21,96 @@ using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statisti
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class disjointSet {
+class Line {
 private:
-    vector<int> p;
+    i64 a, b;
 public:
-    explicit disjointSet(int N) {
-        p.clear();
-        p.resize(N + 1);
-        for (int i = 1; i <= N; i++) p[i] = i;
+    Line() {
+        a = 0, b = -1e18;
     }
 
-    virtual void reset() {
-        for (int i = 0; i < p.size(); i++) p[i] = i;
+    Line(i64 _a, i64 _b) {
+        a = _a, b = _b;
     }
 
-    virtual int find(int u) {
-        return p[u] = (p[u] == u ? u : find(p[u]));
-    }
-
-    virtual void merge(int u, int v) {
-        p[find(v)] = p[find(u)];
-    }
-
-    virtual bool sset(int u, int v) {
-        return find(u) == find(v);
+    inline i64 get(i64 x) {
+        return a * x + b;
     }
 };
 
-class disjointSet2d : disjointSet {
-private:
-    int N, M;
+class Node {
 public:
-    disjointSet2d(int _N, int _M) : disjointSet(4 * _N * _M) {
-        N = _N, M = _M;
+    i64 s, e;
+    Line v;
+    Node *l, *r;
+
+    Node() {
+        s = e = 0;
+        v = Line();
+        l = r = nullptr;
     }
 
-    int get(int x, int y) {
-        return (x * 2 * M + y) * 2;
-    }
-
-    void reset() final {
-        disjointSet::reset();
-    }
-
-    int find(int x, int y) {
-        return disjointSet::find(get(x, y));
-    }
-
-    void merge(int x, int y) final {
-        auto h = get(x, y);
-        if (x) disjointSet::merge(h, h - 2 * M);
-        if (y) disjointSet::merge(h, h - 1);
-        disjointSet::merge(h, h + 2 * M);
-        disjointSet::merge(h, h + 1);
-    }
-
-    bool sset(int x1, int y1, int x2, int y2) {
-        return disjointSet::sset(get(x1, y1), get(x2, y2));
+    Node(i64 _s, i64 _e) {
+        s = _s, e = _e;
+        v = Line();
+        l = r = nullptr;
     }
 };
 
-using qi = tuple<int, int, int, int>;
+namespace LiChao {
+    void update(Node *h, const Line v) {
+        auto s = h->s, e = h->e;
+        auto m = (s + e) / 2;
+
+        auto lo = h->v, hi = v;
+        if (lo.get(s) > hi.get(s)) swap(lo, hi);
+
+        if (lo.get(e) <= hi.get(e)) {
+            h->v = hi;
+            return;
+        }
+
+        if (lo.get(m) < hi.get(m)) {
+            h->v = hi;
+            if (!h->r) h->r = new Node(m + 1, e);
+            update(h->r, lo);
+        } else {
+            h->v = lo;
+            if (!h->l) h->l = new Node(s, m);
+            update(h->l, hi);
+        }
+    }
+
+    i64 query(Node *h, const i64 x) {
+        if (!h) return -1e18;
+
+        auto m = (h->s + h->e) / 2;
+        return max(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
+    }
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, M, Q;
-    cin >> N >> M >> Q;
+    int N;
+    cin >> N;
 
-    vector<int> zip;
-    vector<vector<int>> hei(N, vector<int>(M));
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < M; j++) {
-            cin >> hei[i][j];
-            zip.emplace_back(hei[i][j]);
+    vector<i64> arr(N);
+    for (int i = 0; i < N; i++) cin >> arr[i];
+
+    for (int rev = 0; rev < 2; rev++) {
+        i64 su = 0, ans = -1e18;
+        auto root = new Node(-1e9, 1e9);
+        for (i64 i = 0; i < N; i++) {
+            su += arr[i];
+            ans = max(ans, LiChao::query(root, arr[i]) + arr[i] * (i + 1) - su);
+            LiChao::update(root, Line(-i, su - arr[i]));
         }
+        cout << ans + su << endl;
+        reverse(iterall(arr));
     }
 
-    sort(iterall(zip));
-    zip.erase(unique(iterall(zip)), zip.end());
-    const int Z = zip.size();
-
-    for (auto &v: hei)
-        for (auto &el: v)
-            el = distance(zip.begin(), lower_bound(iterall(zip), el));
-
-    vector<ti> updque;
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < M; j++)
-            updque.emplace_back(hei[i][j], i, j);
-    sort(iterall(updque));
-
-    vector<qi> queries;
-    for (int i = 0; i < Q; i++) {
-        int x1, y1, x2, y2;
-        cin >> x1 >> y1 >> x2 >> y2;
-        --x1, --y1, --x2, --y2;
-        queries.emplace_back(x1, y1, x2, y2);
-    }
-
-    auto dS = disjointSet2d(N, M);
-    vector<int> st(Q, 0), ed(Q, Z - 1);
-
-    for (int i = 0; i < Q; i++) {
-        auto[x1, y1, x2, y2] = queries[i];
-        if (x1 == x2 && y1 == y2) st[i] = ed[i] = hei[x1][y1];
-    }
-
-    while (true) {
-        vector<vector<int>> pbs(Z);
-        bool loopEnd = true;
-        auto qptr = updque.begin();
-
-        dS.reset();
-
-        for (int i = 0; i < Q; i++) {
-            if (st[i] != ed[i]) {
-                loopEnd = false;
-                pbs[(st[i] + ed[i]) / 2].emplace_back(i);
-            }
-        }
-
-        if (loopEnd) break;
-
-        for (int i = 0; i < Z; i++) {
-            while (qptr != updque.end()) {
-                auto[h, x, y] = *qptr;
-                if (h != i) break;
-
-                dS.merge(x, y);
-                ++qptr;
-            }
-
-            for (auto j: pbs[i]) {
-                auto[x1, y1, x2, y2] = queries[j];
-                if (dS.sset(x1, y1, x2, y2)) ed[j] = i;
-                else st[j] = i + 1;
-            }
-        }
-    }
-
-    for (auto el: st) cout << zip[el] << '\n';
     return 0;
 }
