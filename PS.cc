@@ -20,6 +20,6 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    cout << "asdf" << endl;
+    cout << "asdfasdf" << endl;
     return 0;
 }
