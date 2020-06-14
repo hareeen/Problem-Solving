@@ -97,6 +97,7 @@ int main() {
     for (int i = 0; i < Q; i++) {
         int s, e;
         cin >> s >> e;
+        s += lastq;
 
         int pos = lower_bound(iterall(nxen), pi(e, 0)) - nxen.begin();
         lastq = e - s + 1 - PST::query(pseg[pos], 1, N, s, e);
