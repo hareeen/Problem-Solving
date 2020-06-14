@@ -15,93 +15,53 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-void compress(vector<int> &v) {
-    vector<int> zip;
-    copy(iterall(v), back_inserter(zip));
-    sort(iterall(zip));
-
-    for (auto &el:v) el = lower_bound(iterall(zip), el) - zip.begin();
-}
-
-class Node {
-public:
-    int v;
-    Node *l, *r;
-
-    explicit Node(int _v = 0, Node *_l = nullptr, Node *_r = nullptr) {
-        v = _v;
-        l = _l, r = _r;
-    }
-};
-
-namespace PST {
-    Node *init(int s, int e) {
-        auto m = (s + e) / 2;
-        if (s == e) return new Node();
-        else return new Node(0, init(s, m), init(m + 1, e));
-    }
-
-    Node *update(Node *h, int s, int e, int t, int v) {
-        auto m = (s + e) / 2;
-
-        if (t < s or e < t) return h;
-        if (s == e) return new Node(v);
-
-        auto l = update(h->l, s, m, t, v);
-        auto r = update(h->r, m+1, e, t, v);
-        return new Node(l->v + r->v, l, r);
-    }
-
-    int query(Node *h, int s, int e, int ql, int qr) {
-        auto m = (s + e) / 2;
-
-        if (e < ql or qr < s) return 0;
-        if (ql <= s and e <= qr) return h->v;
-        return query(h->l, s, m, ql, qr) + query(h->r, m+1, e, ql, qr);
-    }
-}
-
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, M;
+    cin >> M >> N;
 
-    vector<int> v(N);
-    for (int i = 0; i < N; i++) cin >> v[i];
-    compress(v);
+    vector<ti> arr(N);
+    for (int i = 0; i < N; i++) cin >> get<0>(arr[i]);
+    for (int i = 0; i < N; i++) cin >> get<1>(arr[i]);
+    if (M == 3) for (int i = 0; i < N; i++) cin >> get<2>(arr[i]);
+    sort(iterall(arr));
+    if (M == 2) for (int i = 0; i < N; i++) get<2>(arr[i]) = i;
 
-    vector<int> nxel(N);
-    unordered_map<int, int> mp;
-    for (int i = N - 1; i >= 0; i--) {
-        auto it = mp.find(v[i]);
-        if (it == mp.end()) nxel[i] = N + 1;
-        else nxel[i] = it->second;
-        mp[v[i]] = i;
+    vector<set<pi>> vs(N + 1);
+    vs[0].emplace(0, 0);
+
+    for (auto[_, u, v]:arr) {
+        int s = 0, e = N;
+        while (s < e) {
+            auto m = (s + e + 1) / 2;
+            if (vs[m].empty()) {
+                e = m - 1;
+                continue;
+            }
+
+            auto it = vs[m].lower_bound({u, v});
+            if (it != vs[m].begin() and prev(it)->second < v) s = m;
+            else e = m - 1;
+        }
+
+        auto &aps = vs[s + 1];
+        while (true) {
+            auto it = aps.lower_bound({u, v});
+            if (it == aps.end() || it->second < v) break;
+            else aps.erase(it);
+        }
+
+        aps.emplace(u, v);
     }
 
-    vector<pi> nxen;
-    for (int i = 0; i < N; i++) nxen.emplace_back(nxel[i], i + 1);
-    sort(iterall(nxen));
-
-    vector<Node *> pseg;
-    pseg.emplace_back(PST::init(1, N));
-    for (auto[el, i]:nxen) pseg.emplace_back(PST::update(pseg.back(), 1, N, i, 1));
-
-    int Q;
-    cin >> Q;
-
-    int lastq = 0;
-    for (int i = 0; i < Q; i++) {
-        int s, e;
-        cin >> s >> e;
-        s += lastq;
-
-        int pos = lower_bound(iterall(nxen), pi(e, 0)) - nxen.begin();
-        lastq = e - s + 1 - PST::query(pseg[pos], 1, N, s, e);
-        cout << lastq << '\n';
+    for (int i = N; i >= 0; i--) {
+        if (!vs[i].empty()) {
+            cout << i << endl;
+            break;
+        }
     }
 
     return 0;
