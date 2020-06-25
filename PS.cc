@@ -15,94 +15,58 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-void compress(vector<int> &v) {
-    vector<int> zip;
-    copy(iterall(v), back_inserter(zip));
-    sort(iterall(zip));
+class disjointSet {
+   private:
+    vector<int> par;
+    int N;
 
-    for (auto &el:v) el = lower_bound(iterall(zip), el) - zip.begin();
-}
-
-class Node {
-public:
-    int v;
-    Node *l, *r;
-
-    explicit Node(int _v = 0, Node *_l = nullptr, Node *_r = nullptr) {
-        v = _v;
-        l = _l, r = _r;
+   public:
+    explicit disjointSet(int _N) {
+        N = _N;
+        par.resize(N + 1);
+        for (int i = 0; i <= N; i++) par[i] = i;
     }
+
+    int find(int u) { return par[u] = (u == par[u] ? u : find(par[u])); }
+
+    bool sset(int u, int v) { return find(u) == find(v); }
+
+    void merge(int u, int v) { par[find(u)] = find(v); }
 };
-
-namespace PST {
-    Node *init(int s, int e) {
-        auto m = (s + e) / 2;
-        if (s == e) return new Node();
-        else return new Node(0, init(s, m), init(m + 1, e));
-    }
-
-    Node *update(Node *h, int s, int e, int t, int v) {
-        auto m = (s + e) / 2;
-
-        if (t < s or e < t) return h;
-        if (s == e) return new Node(v);
-
-        auto l = update(h->l, s, m, t, v);
-        auto r = update(h->r, m+1, e, t, v);
-        return new Node(l->v + r->v, l, r);
-    }
-
-    int query(Node *h, int s, int e, int ql, int qr) {
-        auto m = (s + e) / 2;
-
-        if (e < ql or qr < s) return 0;
-        if (ql <= s and e <= qr) return h->v;
-        return query(h->l, s, m, ql, qr) + query(h->r, m+1, e, ql, qr);
-    }
-}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, M;
+    cin >> N >> M;
 
-    vector<int> v(N);
-    for (int i = 0; i < N; i++) cin >> v[i];
-    compress(v);
-
-    vector<int> nxel(N);
-    unordered_map<int, int> mp;
-    for (int i = N - 1; i >= 0; i--) {
-        auto it = mp.find(v[i]);
-        if (it == mp.end()) nxel[i] = N + 1;
-        else nxel[i] = it->second;
-        mp[v[i]] = i;
+    auto dS = disjointSet(N);
+    vector<int> mask(N);
+    for (int i = 0; i < M; i++) {
+        int u, v;
+        cin >> u >> v;
+        --u, --v;
+        dS.merge(u, v);
+        mask[u] = 1 - mask[u];
+        mask[v] = 1 - mask[v];
     }
 
-    vector<pi> nxen;
-    for (int i = 0; i < N; i++) nxen.emplace_back(nxel[i], i + 1);
-    sort(iterall(nxen));
+    vector<vector<int>> grp(N);
+    for (int i = 0; i < N; i++) grp[dS.find(i)].emplace_back(i);
 
-    vector<Node *> pseg;
-    pseg.emplace_back(PST::init(1, N));
-    for (auto[el, i]:nxen) pseg.emplace_back(PST::update(pseg.back(), 1, N, i, 1));
+    int ans = 0;
+    for (const auto &vec : grp) {
+        if(vec.size() < 2) continue;
+        // copy(iterall(vec), ostream_iterator<int>(cout, " "));
+        // cout<<endl;
 
-    int Q;
-    cin >> Q;
-
-    int lastq = 0;
-    for (int i = 0; i < Q; i++) {
-        int s, e;
-        cin >> s >> e;
-        s += lastq;
-
-        int pos = lower_bound(iterall(nxen), pi(e, 0)) - nxen.begin();
-        lastq = e - s + 1 - PST::query(pseg[pos], 1, N, s, e);
-        cout << lastq << '\n';
+        int s = 0;
+        for (auto el : vec) s += mask[el];
+        ans += max(1, s >> 1);
     }
 
+    cout << ans << endl;
     return 0;
 }
