@@ -15,27 +15,82 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class disjointSet {
-private:
-    int N;
-    vector<int> par;
+const uint baseD = 31;
+i64 ans = 0;
+
+class Node {
 public:
-    explicit disjointSet(int _N) {
-        N = _N;
-        par.resize(N + 1);
-        for (int i = 0; i <= N; i++) par[i] = i;
+    uint dep = baseD - 1;
+    vector<uint> sorted;
+    Node *l = nullptr, *r = nullptr;
+
+    Node() = default;
+
+    explicit Node(uint _dep) {
+        dep = _dep;
     }
 
-    int find(int x) {
-        return par[x] = (par[x] == x ? x : find(par[x]));
+    void createLeft() {
+        if (l) return;
+        l = new Node(dep - 1);
     }
 
-    void merge(int x, int y) {
-        par[find(x)] = find(y);
+    void createRight() {
+        if (r) return;
+        r = new Node(dep - 1);
     }
 
-    bool sset(int x, int y) {
-        return find(x) == find(y);
+    void append(uint x) {
+        if (!dep) return;
+
+        if (x & (1u << (dep - 1))) {
+            createRight();
+            r->append(x);
+        } else {
+            createLeft();
+            l->append(x);
+        }
+    }
+
+    uint xorFind(uint x) {
+        if (!dep) return 0;
+
+        bool bit = (1u << (dep - 1)) & x;
+        if (bit) {
+            if (r) return r->xorFind(x);
+            return l->xorFind(x) + (1u << (dep - 1));
+        } else {
+            if (l) return l->xorFind(x);
+            return r->xorFind(x) + (1u << (dep - 1));
+        }
+    }
+
+    void collect() {
+        if (l) l->collect();
+        if (r) r->collect();
+
+        if (dep == 0) {
+            sorted.emplace_back(0);
+            return;
+        }
+
+        if (l && r) {
+            uint m = 1u << (dep - 1);
+            for (auto el: r->sorted) m = min(m, l->xorFind(el));
+
+            ans += m;
+            ans += 1u << (dep - 1);
+        }
+
+        if (l) {
+            copy(iterall(l->sorted), back_inserter(sorted));
+            l->sorted.clear();
+        }
+        if (r) {
+            for (auto &el: r->sorted) el += 1u << (dep - 1);
+            copy(iterall(r->sorted), back_inserter(sorted));
+            r->sorted.clear();
+        }
     }
 };
 
@@ -44,32 +99,19 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    const i64 MOD = 1e9 + 7;
+    Node *root = new Node();
 
-    int N, M;
-    cin >> N >> M;
+    int N;
+    cin >> N;
 
-    vector<i64> exp3(M, 1);
-    for (int i = 1; i < M; i++) exp3[i] = exp3[i - 1] * 3, exp3[i] %= MOD;
-
-    vector<pi> queries;
-    for (int i = 0; i < M; i++) {
-        int u, v;
-        cin >> u >> v;
-        queries.emplace_back(u, v);
+    for (int i = 0; i < N; i++) {
+        uint x;
+        cin >> x;
+        root->append(x);
     }
 
-    i64 ans = 0;
-    auto dS = disjointSet(N);
-    for (int i = M - 1; i >= 0; i--) {
-        auto[u, v] = queries[i];
-        if (dS.sset(u, 0) && dS.sset(v, N - 1)) ans += exp3[i];
-        else if (dS.sset(v, 0) && dS.sset(u, N - 1)) ans += exp3[i];
-        else dS.merge(u, v);
-
-        ans %= MOD;
-    }
-
+    root->collect();
     cout << ans << endl;
+
     return 0;
 }
