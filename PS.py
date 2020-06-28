@@ -1,1 +1,2 @@
-x=int(input());print(*['*'*x]+['*'+' '*(x-2)+'*']*(x-2)+['*'*x],sep='\n')
+n,m,k=map(int,input().split());
+print(*range(n,m+1,k),sep=' ')
