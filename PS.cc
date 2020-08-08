@@ -15,171 +15,170 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const i64 inf = numeric_limits<i64>::max() / 2;
-
-vector<pair<int, i64>> graph[800000];
-
-vector<i64> dijkstra(int st, int V) {
-    vector<i64> dist(V, inf);
-    dist[st] = 0;
-
-    priority_queue<pair<i64, int>> pq;
-    pq.emplace(0, st);
-
-    while (!pq.empty()) {
-        auto[d, h] = pq.top();
-        pq.pop();
-
-        if (dist[h] < d) continue;
-        for (auto[t, w]:graph[h]) {
-            if (dist[t] > d + w) {
-                dist[t] = d + w;
-                pq.emplace(d + w, t);
-            }
-        }
-    }
-
-    return dist;
-}
-
-class Node {
-public:
-    int idx;
-    Node *l, *r;
-
-    explicit Node(int _idx) {
-        idx = _idx;
-        l = r = nullptr;
-    }
-
-    Node(int _idx, Node *_l, Node *_r) {
-        idx = _idx, l = _l, r = _r;
-    }
-};
-
-namespace partitionHelper {
-    int N, cur;
-    Node *root = nullptr;
+namespace TREE {
+    int N;
+    vector<vector<int>> spt;
+    vector<vector<pi>> spM, adj, tr;
+    vector<int> dep;
 
     void init(int _N) {
         N = _N;
-        cur = 0;
+        adj.resize(N + 1), spt.resize(N + 1), tr.resize(N + 1);
+        spM.resize(N + 1);
+        dep.resize(N + 1);
     }
 
-    Node *construct(int s, int e) {
-        if (s == e) return new Node(cur++);
-
-        auto i = cur;
-        cur += 2;
-        auto m = (s + e) >> 1;
-        auto l = construct(s, m);
-        auto r = construct(m + 1, e);
-        return new Node(i, l, r);
+    void emplace_edge(int u, int v, int w) {
+        adj[u].emplace_back(v, w);
+        adj[v].emplace_back(u, w);
     }
 
-    Node *construct() {
-        return construct(1, N);
+    //tr, dep gen
+    void dfs1(int h, int p) {
+        if (p == -1) dep[h] = 0;
+        else dep[h] = dep[p] + 1;
+
+        for (auto[t, w]:adj[h]) {
+            if (p == t) continue;
+
+            tr[h].emplace_back(t, w);
+            dfs1(t, h);
+        }
     }
 
-    void rangeCollect(int s, int e, Node *h, int l, int r, bool tp, vector<int> &target) {
-        if (r < s || e < l) return;
-        if (l <= s && e <= r) {
-            if (s == e) target.emplace_back(h->idx);
-            else target.emplace_back(h->idx + tp);
-            return;
+    pi mer(pi a, pi b) {
+        vector<int> v = {a.first, a.second, b.first, b.second};
+        sort(iterall(v), greater<>());
+        v.erase(unique(iterall(v)), v.end());
+        return {v[0], v[1]};
+    }
+
+    //spt, spM gen
+    void dfs2(int h, int p, int w) {
+        if (p != -1) {
+            spt[h].emplace_back(p);
+            spM[h].emplace_back(w, -1);
+            for (size_t i = 1; (1u << i) <= dep[h]; i++) {
+                spt[h].emplace_back(spt[spt[h][i - 1]][i - 1]);
+                spM[h].emplace_back(mer(spM[h][i - 1], spM[spt[h][i - 1]][i - 1]));
+            }
         }
 
-        auto m = (s + e) >> 1;
-        rangeCollect(s, m, h->l, l, r, tp, target);
-        rangeCollect(m + 1, e, h->r, l, r, tp, target);
+        for (auto[t, nw]:tr[h]) dfs2(t, h, nw);
     }
 
-    vector<int> rangeCollect(int l, int r, bool tp) {
-        vector<int> ret;
-        rangeCollect(1, N, root, l, r, tp, ret);
-        return ret;
-    }
+    ti lca(int u, int v) {
+        if (dep[u] > dep[v]) return lca(v, u);
 
-    void defaultEdges(int s, int e, Node *h, Node *p, vector<pi> &target) {
-        if (p) {
-            auto hx = h->idx, px = p->idx;
-            target.emplace_back(hx, px);
-            if (s != e) target.emplace_back(px + 1, hx + 1);
-            else target.emplace_back(px + 1, hx);
+        pi ret = {-1, -1};
+        if (dep[u] < dep[v]) {
+            size_t p = spt[v].size() - 1;
+            while (dep[u] < dep[v]) {
+                while (dep[v] - (1u << p) < dep[u]) --p;
+                ret = mer(ret, spM[v][p]);
+                v = spt[v][p];
+                p = min(spt[v].size() - 1, p);
+            }
         }
 
-        if (s == e) return;
+        size_t p = spt[v].size() - 1;
+        while (true) {
+            if (u == v) return {u, ret.first, ret.second};
+            if (spt[u][0] == spt[v][0]) {
+                ret = mer(ret, spM[u][0]);
+                ret = mer(ret, spM[v][0]);
+                return {u, ret.first, ret.second};
+            }
 
-        auto m = (s + e) >> 1;
-        defaultEdges(s, m, h->l, h, target);
-        defaultEdges(m + 1, e, h->r, h, target);
-    }
-
-    vector<pi> defaultEdges() {
-        vector<pi> ret;
-        defaultEdges(1, N, root, nullptr, ret);
-        return ret;
-    }
-
-    void indexCollect(int s, int e, Node *h, vector<int> &target) {
-        if (s == e) {
-            target.emplace_back(h->idx);
-            return;
+            while (spt[u][p] == spt[v][p]) --p;
+            ret = mer(ret, spM[u][p]);
+            ret = mer(ret, spM[v][p]);
+            u = spt[u][p], v = spt[v][p];
+            p = min(spt[v].size() - 1, p);
         }
-
-        auto m = (s + e) >> 1;
-        indexCollect(s, m, h->l, target);
-        indexCollect(m + 1, e, h->r, target);
     }
 
-    vector<int> indexCollect() {
-        vector<int> ret(1);
-        indexCollect(1, N, root, ret);
-        return ret;
+    bool isAdj(int u, int v) {
+        if (dep[u] == dep[v]) return false;
+        if (dep[u] > dep[v]) return isAdj(v, u);
+        return spt[v][0] == u;
     }
 }
 
+class disjointSet {
+public:
+    int N{};
+    vector<int> p;
+
+    explicit disjointSet(int _N) {
+        N = _N;
+        p.resize(N + 1);
+        for (int i = 0; i <= N; i++) p[i] = i;
+    }
+
+    int find(int u) {
+        return p[u] = (p[u] == u ? u : find(p[u]));
+    }
+
+    void mer(int u, int v) {
+        p[find(u)] = find(v);
+    }
+
+    bool sset(int u, int v) {
+        return find(u) == find(v);
+    }
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, M, K;
-    cin >> N >> M >> K;
+    int V, E;
+    cin >> V >> E;
 
-    partitionHelper::init(N);
-    partitionHelper::root = partitionHelper::construct();
-    auto indexMap = partitionHelper::indexCollect();
+    vector<ti> edges;
+    for (int i = 0; i < E; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        edges.emplace_back(w, u, v);
+    }
 
-    int V = partitionHelper::cur;
+    sort(iterall(edges));
 
-    for (int i = 0; i < M; i++) {
-        i64 w;
-        int a, b, c, d;
-        cin >> w >> a >> b >> c >> d;
+    int totalW = 0, trE = 0;
+    auto dS = disjointSet(V);
+    TREE::init(V);
+    for (auto[w, u, v]:edges) {
+        if (dS.sset(u, v)) continue;
+        totalW += w;
+        ++trE;
+        dS.mer(u, v);
+        TREE::emplace_edge(u, v, w);
+    }
 
-        auto stV = partitionHelper::rangeCollect(a, b, false);
-        auto edV = partitionHelper::rangeCollect(c, d, true);
+    if (trE != V - 1) {
+        cout << -1 << endl;
+        return 0;
+    }
 
-        for (auto sv: stV) {
-            for (auto ev: edV) {
-                if (sv != ev) graph[sv].emplace_back(ev, w);
-            }
+    TREE::dfs1(1, -1);
+    TREE::dfs2(1, -1, -1);
+
+    int ans = numeric_limits<int>::max();
+    for (auto[w, u, v]:edges) {
+        if (TREE::isAdj(u, v)) continue;
+        auto[L, M, sM] = TREE::lca(u, v);
+        if (M == w) {
+            if (sM == -1) continue;
+            ans = min(ans, totalW + w - sM);
+        } else {
+            ans = min(ans, totalW + w - M);
         }
     }
 
-    auto dEdg = partitionHelper::defaultEdges();
-    for (auto[u, v]:dEdg) graph[u].emplace_back(v, 0);
-
-    auto dist = dijkstra(indexMap[K], V);
-    for (int i = 1; i <= N; i++) {
-        auto vl = dist[indexMap[i]];
-        if (vl >= inf) vl = -1;
-
-        cout << vl << " ";
-    }
-    cout << '\n';
+    if (ans == numeric_limits<int>::max()) ans = -1;
+    cout << ans << endl;
 
     return 0;
 }
