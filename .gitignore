@@ -8,6 +8,7 @@ __pycache__/
 Makefile
 .DS_Store
 in.txt
+out.txt
 .vscode
 cmake-build-debug
 cmake-build-release
