@@ -13,3 +13,4 @@ out.txt
 cmake-build-debug
 cmake-build-release
 .idea
+gen.py
