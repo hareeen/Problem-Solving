@@ -15,84 +15,90 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
+int filter(vector<pli>& arr, bool md) {
+    sort(iterall(arr));
+
+    vector<pli> res;
+    for (const auto& [x, y] : arr) {
+        if (md)
+            while (!res.empty() && res.back().second <= y) res.pop_back();
+        else if (!res.empty() && res.back().second <= y)
+            continue;
+
+        res.emplace_back(x, y);
+    }
+
+    arr = res;
+    return arr.size();
+}
+
+inline i64 cost(const pli& mel, const pli& nel) {
+    return max(nel.first - mel.first, 0LL) * max(nel.second - mel.second, 0LL);
+}
+
+i64 solve(int s, int e, int l, int r,
+          const vector<pli>& mrr, const vector<pli>& nrr) {
+    if (e - s < 2) {
+        i64 ret = 0;
+        for (int i = s; i <= e; i++) {
+            for (int j = l; j <= r; j++) {
+                ret = max(ret, cost(mrr[i], nrr[j]));
+            }
+        }
+
+        return ret;
+    }
+
+    int m = (s + e) >> 1;
+    i64 ret = 0;
+    int rp = 0;
+
+    for (int i = l; i <= r; i++) {
+        auto cst = cost(mrr[m], nrr[i]);
+        if (ret < cst) ret = cst, rp = i;
+    }
+
+    return max({solve(s, m - 1, l, rp, mrr, nrr),
+                solve(m + 1, e, rp, r, mrr, nrr),
+                ret});
+}
+
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, K;
-    cin >> N >> K;
+    int M, N;
+    cin >> M >> N;
 
-    vector<i64> arr(N);
-    for (int i = 0; i < N; i++)
-        cin >> arr[i];
+    vector<pli> mrr(M), nrr(N);
+    for (int i = 0; i < M; i++) cin >> mrr[i].first >> mrr[i].second;
+    for (int i = 0; i < N; i++) cin >> nrr[i].first >> nrr[i].second;
 
-    vector<pair<pi, int>> queries(K);
-    vector<i64> answers(K);
-    for (int i = 0; i < K; i++) {
-        cin >> queries[i].first.first >> queries[i].first.second;
-        queries[i].first.first--;
-        queries[i].first.second--;
-        queries[i].second = i;
-    }
 
-    int sq = (int)sqrt(N);
-    sort(iterall(queries), [sq](const pair<pi, int>& lhs, const pair<pi, int>& rhs) {
-        const auto& l = lhs.first;
-        const auto& r = rhs.first;
+    M = filter(mrr, false);
+    N = filter(nrr, true);
 
-        if (l.first / sq < r.first / sq) return true;
-        if (l.first / sq == r.first / sq && l.second < r.second) return true;
-        return false;
-    });
-
-    vector<i64> zip = arr;
-    sort(iterall(zip));
-    zip.erase(unique(iterall(zip)), zip.end());
-
-    for (auto& el : arr) el = lower_bound(iterall(zip), el) - zip.begin();
-
-    int Z = zip.size();
-    i64 ans = 0;
-    vector<i64> counts(Z);
-
-    auto append_element = [&](int idx) {
-        counts[arr[idx]]++;
-        ans += (counts[arr[idx]] * 2 - 1) * zip[arr[idx]];
-    };
-
-    auto delete_element = [&](int idx) {
-        ans -= (counts[arr[idx]] * 2 - 1) * zip[arr[idx]];
-        counts[arr[idx]]--;
-    };
-
-    int sl, sr;
+    // re-filter
     {
-        const auto& [l, r] = queries[0].first;
-        const auto& idx = queries[0].second;
+        vector<i64> nx(N), ny(N);
+        for (int i = 0; i < N; i++) tie(nx[i], ny[i]) = nrr[i];
 
-        for (int i = l; i <= r; i++) {
-            append_element(i);
+        reverse(iterall(ny));
+
+        vector<pli> res;
+        for (const auto& [x, y] : mrr) {
+            int xlo = upper_bound(iterall(nx), x) - nx.begin();
+            int ylo = upper_bound(iterall(ny), y) - ny.begin();
+
+            if (xlo + ylo < N) res.emplace_back(x, y);
         }
 
-        answers[idx] = ans;
-        tie(sl, sr) = tie(l, r);
+        mrr = res;
+        M = mrr.size();
     }
 
-    for (int i = 1; i < K; i++) {
-        const auto& [l, r] = queries[i].first;
-        const auto& idx = queries[i].second;
+    cout << solve(0, M - 1, 0, N - 1, mrr, nrr) << endl;
 
-        while (sl > l) --sl, append_element(sl);
-        while (sr < r) ++sr, append_element(sr);
-
-        while (sl < l) delete_element(sl), ++sl;
-        while (sr > r) delete_element(sr), --sr;
-
-        answers[idx] = ans;
-        tie(sl, sr) = tie(l, r);
-    }
-
-    copy(iterall(answers), ostream_iterator<i64>(cout, "\n"));
     return 0;
 }
