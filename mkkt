@@ -1,2 +1,0 @@
-# Compile Script of PS.kt
-kotlinc PS.kt -include-runtime -d a.jar
