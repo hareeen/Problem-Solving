@@ -26,28 +26,29 @@ int main() {
     vector<int> arr(N);
     for (auto &el : arr) cin >> el;
 
-    vector<int> psum(N + 1);
-    for (int i = 0; i < N; i++) psum[i + 1] = psum[i] + arr[i];
-
-    if (psum.back() < S) {
-        cout << 0 << endl;
-        return 0;
+    int k = N / 2;
+    vector<int> v;
+    for (int i = 0; i < (1 << k); i++) {
+        int s = 0;
+        for (int j = 0; j < k; j++) {
+            if (i & (1 << j)) s += arr[j];
+        }
+        v.emplace_back(s);
+        // cout << s << endl;
     }
+    sort(iterall(v));
 
-    int s = 1, e = N;
-    while (s < e) {
-        int m = (s + e) / 2;
-        for (int i = 0; i <= N - m; i++) {
-            if (psum[i + m] - psum[i] >= S) {
-                e = m;
-                goto nl;
-            }
+    i64 ans = 0;
+    for (int i = 0; i < (1 << (N - k)); i++) {
+        int s = 0;
+        for (int j = 0; j < N - k; j++) {
+            if (i & (1 << j)) s += arr[N - 1 - j];
         }
 
-        s = m + 1;
-    nl:;
+        auto [itl, itu] = equal_range(iterall(v), S - s);
+        ans += (itu - itl);
     }
 
-    cout << s << endl;
+    cout << ans - (S == 0) << endl;
     return 0;
 }
