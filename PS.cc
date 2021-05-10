@@ -20,35 +20,22 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, S;
-    cin >> N >> S;
+    int N;
+    cin >> N;
 
-    vector<int> arr(N);
-    for (auto &el : arr) cin >> el;
-
-    int k = N / 2;
-    vector<int> v;
-    for (int i = 0; i < (1 << k); i++) {
-        int s = 0;
-        for (int j = 0; j < k; j++) {
-            if (i & (1 << j)) s += arr[j];
-        }
-        v.emplace_back(s);
-        // cout << s << endl;
-    }
-    sort(iterall(v));
+    vector<i64> x(N + 1), y(N + 1);
+    for (int i = 0; i < N; i++) cin >> x[i] >> y[i];
+    x[N] = x[0], y[N] = y[0];
 
     i64 ans = 0;
-    for (int i = 0; i < (1 << (N - k)); i++) {
-        int s = 0;
-        for (int j = 0; j < N - k; j++) {
-            if (i & (1 << j)) s += arr[N - 1 - j];
-        }
+    for (int i = 0; i < N; i++) ans += (x[i] * y[i + 1]);
+    for (int i = 0; i < N; i++) ans -= (y[i] * x[i + 1]);
+    ans = abs(ans);
 
-        auto [itl, itu] = equal_range(iterall(v), S - s);
-        ans += (itu - itl);
-    }
+    if (ans % 2 == 0)
+        cout << ans / 2 << ".0" << endl;
+    else
+        cout << ans / 2 << ".5" << endl;
 
-    cout << ans - (S == 0) << endl;
     return 0;
 }
