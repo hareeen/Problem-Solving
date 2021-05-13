@@ -1,19 +1,24 @@
-A = int(input())
-X = int(input())
+def ext_euc(a, b):
+    if b == 0:
+        return (a, 1, 0)
 
-adex = [A]
+    g, x, y = ext_euc(b, a % b)
+    return (g, y, x-(a//b)*y)
 
-mod = int(1e9 + 7)
-for i in range(70):
-    adex.append(adex[-1]**2)
-    adex[-1]%=mod
 
-ans = 1
-l = [*map(int, bin(X)[2:][::-1])]
-for i in range(len(l)):
-    if l[i] == 1:
-        print(l)
-        ans *= adex[i]
-    ans %= mod
+def powmod(b, e, m):
+    b %= m
+    ret: int = 1
+    while e > 0:
+        if e & 1:
+            ret = (ret * b) % m
+        b = (b * b) % m
+        e >>= 1
 
-print(ans)
+    return ret
+
+
+m = int(1e9 + 7)
+for i in range(int(input())):
+    r, g, b, k = map(int, input().split())
+    print((r*(1-powmod(b*ext_euc(b+1, m)[1],k,m))+k*(b+g)*ext_euc(b, m)[1]) % m)
