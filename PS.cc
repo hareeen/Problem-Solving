@@ -15,63 +15,74 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-const int pinf = numeric_limits<int>::max() / 2;
+class SegTree {
+   public:
+    int N{};
+    vector<i64> su, vl, lf, rg;
 
-vector<int> dijkstra(int sv, const vector<vector<pi>> &graph) {
-    const int N = graph.size();
-    vector<int> dist(N, pinf);
-    dist[sv] = 0;
+    SegTree() = default;
+    explicit SegTree(int _N) {
+        N = _N;
+        su.resize(4 * N + 1);
+        vl.resize(4 * N + 1);
+        lf.resize(4 * N + 1);
+        rg.resize(4 * N + 1);
+    }
 
-    priority_queue<pi, vector<pi>, greater<pi>> pq;
-    pq.emplace(0, sv);
+    void init(int s, int e, int n) {
+        su[n] = 1LL * (e - s + 1) * (-N);
 
-    while (!pq.empty()) {
-        auto [W, h] = pq.top();
-        pq.pop();
-
-        if (dist[h] < W) continue;
-        for (auto [t, w] : graph[h]) {
-            if (dist[t] > W + w) {
-                dist[t] = W + w;
-                pq.emplace(W + w, t);
-            }
+        if (s != e) {
+            int m = (s + e) / 2, k = n * 2;
+            init(s, m, k);
+            init(m + 1, e, k + 1);
         }
     }
+    void init() { init(1, N, 1); }
 
-    return dist;
-}
+    void update(int s, int e, int n, int t) {
+        if (t < s || e < t) return;
+        if (s == e) {
+            su[n] = vl[n] = lf[n] = rg[n] = 1;
+            return;
+        }
+
+        int m = (s + e) / 2, k = n * 2;
+        update(s, m, k, t);
+        update(m + 1, e, k + 1, t);
+
+        su[n] = su[k] + su[k + 1];
+        lf[n] = max(lf[k], su[k] + lf[k + 1]);
+        rg[n] = max(rg[k + 1], su[k + 1] + rg[k]);
+        vl[n] = max({vl[k], vl[k + 1], rg[k] + lf[k + 1]});
+    }
+    void update(int t) { update(1, N, 1, t); }
+
+    i64 query() { return vl[1]; }
+};
 
 bool process() {
-    int N, M;
-    cin >> N >> M;
+    int N;
+    cin >> N;
 
-    if (N + M == 0) return false;
+    if (!N) return false;
 
-    int S, D;
-    cin >> S >> D;
+    vector<pli> hi(N);
+    for (int i = 0; i < N; i++) {
+        cin >> hi[i].first;
+        hi[i].second = i + 1;
+    }
+    sort(iterall(hi), greater<>());
 
-    vector<vector<pi>> graph(N);
-    vector<ti> edg;
-
-    for (int i = 0; i < M; i++) {
-        int u, v, w;
-        cin >> u >> v >> w;
-        graph[u].emplace_back(v, w);
-        edg.emplace_back(u, v, w);
+    i64 ans = 0;
+    SegTree ST(N);
+    ST.init();
+    for (const auto& [h, i] : hi) {
+        ST.update(i);
+        ans = max(ans, ST.query() * h);
     }
 
-    vector<vector<int>> dist(N);
-    for (int i = 0; i < N; i++) dist[i] = dijkstra(i, graph);
-
-    vector<vector<pi>> graph2(N);
-    for (int i = 0; i < M; i++) {
-        auto [u, v, w] = edg[i];
-        if (dist[S][u] + w + dist[v][D] != dist[S][D]) graph2[u].emplace_back(v, w);
-    }
-
-    int res = dijkstra(S, graph2)[D];
-    if (res >= pinf) res = -1;
-    cout << res << endl;
+    cout << ans << '\n';
 
     return true;
 }
@@ -81,8 +92,7 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    while (process())
-        ;
+    process();
 
     return 0;
 }
