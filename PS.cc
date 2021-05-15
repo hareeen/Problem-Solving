@@ -15,73 +15,74 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class DisjointSet {
-   public:
-    vector<int> p;
-    int N{};
+const int pinf = numeric_limits<int>::max() / 2;
 
-    explicit DisjointSet(int _N) {
-        N = _N;
-        p.resize(N);
-        iota(iterall(p), 0);
+vector<int> dijkstra(int sv, const vector<vector<pi>> &graph) {
+    const int N = graph.size();
+    vector<int> dist(N, pinf);
+    dist[sv] = 0;
+
+    priority_queue<pi, vector<pi>, greater<pi>> pq;
+    pq.emplace(0, sv);
+
+    while (!pq.empty()) {
+        auto [W, h] = pq.top();
+        pq.pop();
+
+        if (dist[h] < W) continue;
+        for (auto [t, w] : graph[h]) {
+            if (dist[t] > W + w) {
+                dist[t] = W + w;
+                pq.emplace(W + w, t);
+            }
+        }
     }
 
-    int fd(int u) { return p[u] = p[u] == u ? u : fd(p[u]); }
-    void mer(int u, int v) { p[fd(u)] = fd(v); }
-    bool sset(int u, int v) { return fd(u) == fd(v); }
-};
+    return dist;
+}
+
+bool process() {
+    int N, M;
+    cin >> N >> M;
+
+    if (N + M == 0) return false;
+
+    int S, D;
+    cin >> S >> D;
+
+    vector<vector<pi>> graph(N);
+    vector<ti> edg;
+
+    for (int i = 0; i < M; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        graph[u].emplace_back(v, w);
+        edg.emplace_back(u, v, w);
+    }
+
+    vector<vector<int>> dist(N);
+    for (int i = 0; i < N; i++) dist[i] = dijkstra(i, graph);
+
+    vector<vector<pi>> graph2(N);
+    for (int i = 0; i < M; i++) {
+        auto [u, v, w] = edg[i];
+        if (dist[S][u] + w + dist[v][D] != dist[S][D]) graph2[u].emplace_back(v, w);
+    }
+
+    int res = dijkstra(S, graph2)[D];
+    if (res >= pinf) res = -1;
+    cout << res << endl;
+
+    return true;
+}
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
-
-    vector<pi> rect(N);
-    vector<int> zipped;
-    for (auto &[f, s] : rect) {
-        cin >> f >> s;
-        zipped.emplace_back(f);
-        zipped.emplace_back(s);
-    }
-
-    sort(iterall(zipped));
-    zipped.erase(unique(iterall(zipped)), zipped.end());
-
-    const int Z = zipped.size();
-    auto DS = DisjointSet(Z);
-    for (const auto &[f, s] : rect) {
-        auto fi = lower_bound(iterall(zipped), f) - zipped.begin();
-        auto si = lower_bound(iterall(zipped), s) - zipped.begin();
-
-        DS.mer(fi, si);
-    }
-
-    i64 ans = 0;
-    vector<vector<i64>> gps(Z);
-    for (int i = 0; i < Z; i++) gps[DS.fd(i)].emplace_back(zipped[i]);
-
-    vector<int> eds(Z);
-    for (const auto &[f, s] : rect) {
-        auto fi = DS.fd(lower_bound(iterall(zipped), f) - zipped.begin());
-        auto si = DS.fd(lower_bound(iterall(zipped), s) - zipped.begin());
-        assert(fi == si);
-
-        eds[fi]++;
-        ans += f, ans += s;
-    }
-
-    for (int i = 0; i < Z; i++) {
-        const auto &vec = gps[i];
-        if (vec.empty()) continue;
-
-        ans -= accumulate(iterall(vec), 0LL);
-        if (eds[i] != vec.size()) ans += *max_element(iterall(vec));
-    }
-
-    cout << ans << endl;
+    while (process())
+        ;
 
     return 0;
 }
