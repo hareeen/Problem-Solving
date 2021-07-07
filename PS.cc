@@ -15,76 +15,16 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-class SegTree {
-   public:
-    int N{};
-    vector<i64> su, vl, lf, rg;
+#define x first
+#define y second
 
-    SegTree() = default;
-    explicit SegTree(int _N) {
-        N = _N;
-        su.resize(4 * N + 1);
-        vl.resize(4 * N + 1);
-        lf.resize(4 * N + 1);
-        rg.resize(4 * N + 1);
-    }
+pli operator-(const pli& lhs, const pli& rhs) {
+    return {lhs.x - rhs.x, lhs.y - rhs.y};
+}
 
-    void init(int s, int e, int n) {
-        su[n] = 1LL * (e - s + 1) * (-N);
-
-        if (s != e) {
-            int m = (s + e) / 2, k = n * 2;
-            init(s, m, k);
-            init(m + 1, e, k + 1);
-        }
-    }
-    void init() { init(1, N, 1); }
-
-    void update(int s, int e, int n, int t) {
-        if (t < s || e < t) return;
-        if (s == e) {
-            su[n] = vl[n] = lf[n] = rg[n] = 1;
-            return;
-        }
-
-        int m = (s + e) / 2, k = n * 2;
-        update(s, m, k, t);
-        update(m + 1, e, k + 1, t);
-
-        su[n] = su[k] + su[k + 1];
-        lf[n] = max(lf[k], su[k] + lf[k + 1]);
-        rg[n] = max(rg[k + 1], su[k + 1] + rg[k]);
-        vl[n] = max({vl[k], vl[k + 1], rg[k] + lf[k + 1]});
-    }
-    void update(int t) { update(1, N, 1, t); }
-
-    i64 query() { return vl[1]; }
-};
-
-bool process() {
-    int N;
-    cin >> N;
-
-    if (!N) return false;
-
-    vector<pli> hi(N);
-    for (int i = 0; i < N; i++) {
-        cin >> hi[i].first;
-        hi[i].second = i + 1;
-    }
-    sort(iterall(hi), greater<>());
-
-    i64 ans = 0;
-    SegTree ST(N);
-    ST.init();
-    for (const auto& [h, i] : hi) {
-        ST.update(i);
-        ans = max(ans, ST.query() * h);
-    }
-
-    cout << ans << '\n';
-
-    return true;
+i64 ccw(const pli& p1, const pli& p2, const pli& p3) {
+    auto v1 = p2 - p1, v2 = p3 - p1;
+    return v1.x * v2.y - v1.y * v2.x;
 }
 
 int main() {
@@ -92,7 +32,78 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    process();
+    int N;
+    cin >> N;
 
+    pli T, B;
+    cin >> T.x >> T.y >> B.x >> B.y;
+
+    vector<pli> pts({T, B});
+    for (int i = 0; i < N; i++) {
+        i64 yc, xs, xe;
+        cin >> yc >> xs >> xe;
+
+        auto c1 = ccw(B, T, {xs, yc}), c2 = ccw(B, T, {xe, yc});
+        if (c1 == 0 || c2 == 0) continue;
+        if (c1 > 0 ^ c2 > 0) continue;
+
+        pts.emplace_back(c1 < 0 ? xs : xe, yc);
+    }
+
+    vector<pli> hull;
+    int P;
+
+    {
+        int un = 0, dn = 0;
+        vector<pli> uh, dh;
+
+        sort(iterall(pts));
+        for (auto p : pts) {
+            while (un >= 2 && ccw(uh[un - 2], uh[un - 1], p) >= 0) --un, uh.pop_back();
+            ++un, uh.emplace_back(p);
+        }
+
+        reverse(iterall(pts));
+        for (auto p : pts) {
+            while (dn >= 2 && ccw(dh[dn - 2], dh[dn - 1], p) >= 0) --dn, dh.pop_back();
+            ++dn, dh.emplace_back(p);
+        }
+
+        copy(uh.begin(), uh.end(), back_inserter(hull));
+        copy(dh.begin() + 1, dh.end() - 1, back_inserter(hull));
+        P = un + dn - 2;
+    }
+
+    if (P == 2) {
+        cout << 0 << endl;
+        return 0;
+    }
+
+    i64 ans = 0;
+    for (int i = 0; i < P - 2; i++) {
+        int k = i + 2;
+        for (int j = i + 1; j < P - 1; j++) {
+            k = max(k, j + 1);
+            
+            i64 larea = abs(ccw(hull[i], hull[j], hull[k]));
+            if (k < P - 1) {
+                i64 narea = abs(ccw(hull[i], hull[j], hull[k + 1]));
+
+                while (k < P - 1 && larea < narea) {
+                    ++k;
+                    larea = narea;
+
+                    if (k == P - 1)
+                        narea = -1;
+                    else
+                        narea = abs(ccw(hull[i], hull[j], hull[k + 1]));
+                }
+            }
+            
+            ans = max(ans, larea);
+        }
+    }
+
+    cout << prec(10) << static_cast<long double>(ans) / 2.0L << endl;
     return 0;
 }
