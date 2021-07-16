@@ -15,169 +15,176 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-void dfs1(int h, vector<bool> &vst, stack<int> &trc, const vector<vector<int>> &G) {
-    for (auto t : G[h]) {
-        if (!vst[t]) vst[t] = true, dfs1(t, vst, trc, G);
+constexpr int pinf = numeric_limits<int>::max() / 2;
+constexpr int ninf = numeric_limits<int>::min() / 2;
+
+vector<int> dijkstra(const vector<vector<pi>>& G, const vector<int>& ini) {
+    const int V = G.size();
+    vector<int> dist(V, pinf);
+
+    priority_queue<pi, vector<pi>, greater<pi>> pq;
+    for (auto el : ini) {
+        pq.emplace(0, el);
+        dist[el] = 0;
     }
 
-    trc.push(h);
-}
+    while (!pq.empty()) {
+        auto [W, h] = pq.top();
+        pq.pop();
 
-void dfs2(int h, vector<bool> &vst, vector<int> &grp, const vector<vector<int>> &G) {
-    for (auto t : G[h]) {
-        if (!vst[t]) vst[t] = true, dfs2(t, vst, grp, G);
-    }
+        if (dist[h] < W) continue;
 
-    grp.emplace_back(h);
-}
-
-bool SCC(vector<vector<int>> &graph1) {
-    const int V = graph1.size();
-
-    vector<bool> vst(V);
-    stack<int> trc;
-
-    for (int i = 0; i < V; i++) {
-        if (!vst[i]) vst[i] = true, dfs1(i, vst, trc, graph1);
-    }
-
-    vector<vector<int>> graph2(V);
-    for (int h = 0; h < V; h++) {
-        for (auto t : graph1[h]) graph2[t].emplace_back(h);
-        graph1[h].clear();
-    }
-
-    for (auto &vec : graph2) vec.shrink_to_fit();
-
-    vector<int> sccn(V);
-    vst.clear(), vst.resize(V);
-    while (!trc.empty()) {
-        if (!vst[trc.top()]) {
-            vector<int> grp;
-            vst[trc.top()] = true;
-            dfs2(trc.top(), vst, grp, graph2);
-            for (auto el : grp) sccn[el] = trc.size();
-        }
-        trc.pop();
-    }
-
-    for (int i = 0; i < V / 2; i++) {
-        if (sccn[i] == sccn[i + V / 2]) return false;
-    }
-
-    return true;
-}
-
-void process() {
-    int N, M;
-    cin >> N >> M;
-
-    vector<string> mp(N);
-    for (auto &str : mp) cin >> str;
-
-    {
-        int wn = 0, bn = 0;
-        for (const auto &str : mp) {
-            wn += count(iterall(str), 'W');
-            bn += count(iterall(str), 'B');
-        }
-
-        if (wn != bn * 2) {
-            cout << "NO" << endl;
-            return;
-        }
-    }
-
-    if (N == 1 || M == 1) {
-        cout << "NO" << endl;
-        return;
-    }
-
-    const int nt = N * (M - 1) + M * (N - 1);
-
-    vector<vector<int>> graph1(2 * nt);
-
-    auto sat_append = [&](int u, int v, bool inv = true) {
-        graph1[u].emplace_back(v);
-        if (inv) graph1[(nt + v) % (2 * nt)].emplace_back((nt + u) % (2 * nt));
-    };
-
-    {
-        int n = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < M - 1; j++, n++) {
-                if (mp[i][j] == '.' || mp[i][j + 1] == '.' || mp[i][j] == mp[i][j + 1]) {
-                    sat_append(n, nt + n, false);
-                }
-            }
-        }
-        for (int i = 0; i < N - 1; i++) {
-            for (int j = 0; j < M; j++, n++) {
-                if (mp[i][j] == '.' || mp[i + 1][j] == '.' || mp[i][j] == mp[i + 1][j]) {
-                    sat_append(n, nt + n, false);
-                }
+        for (auto [t, w] : G[h]) {
+            if (dist[t] > W + w) {
+                dist[t] = W + w;
+                pq.emplace(W + w, t);
             }
         }
     }
 
-    {
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < M; j++) {
-                int t = N * (M - 1) + M * (i - 1) + j;
-                int b = N * (M - 1) + M * i + j;
-                int l = (M - 1) * i + j - 1;
-                int r = (M - 1) * i + j;
+    return dist;
+}
 
-                if (mp[i][j] == 'B') {
-                    if (i == 0) sat_append(nt + b, b, false);
-                    if (i == N - 1) sat_append(nt + t, t, false);
-                    if (j == 0) sat_append(nt + r, r, false);
-                    if (j == M - 1) sat_append(nt + l, l, false);
+class DisjointSet {
+   public:
+    int N;
+    vector<int> p;
 
-                    if (i > 0 && i < N - 1) {
-                        sat_append(t, nt + b);
-                        sat_append(nt + b, t);
-                    }
-                    if (j > 0 && j < M - 1) {
-                        sat_append(l, nt + r);
-                        sat_append(nt + r, l);
-                    }
-                }
-
-                if (mp[i][j] == 'W') {
-                    vector<int> validNodes;
-
-                    if (i != 0) validNodes.emplace_back(t);
-                    if (i != N - 1) validNodes.emplace_back(b);
-                    if (j != 0) validNodes.emplace_back(l);
-                    if (j != M - 1) validNodes.emplace_back(r);
-
-                    const int V = validNodes.size();
-                    for (int u = 0; u < V; u++) {
-                        for (int v = u + 1; v < V; v++) {
-                            sat_append(validNodes[u], nt + validNodes[v]);
-                        }
-                    }
-                }
-            }
-        }
+    explicit DisjointSet(int _N) {
+        N = _N;
+        p.reserve(N);
+        for (int i = 0; i < N; i++) p.emplace_back(i);
     }
 
-    mp.clear();
-    for (auto &vec : graph1) vec.shrink_to_fit();
+    inline int find(int u) {
+        return p[u] = (p[u] == u ? u : find(p[u]));
+    }
 
-    cout << (SCC(graph1) ? "YES" : "NO") << endl;
-}
+    inline void mer(int u, int v) {
+        p[find(u)] = find(v);
+    }
+
+    inline bool sset(int u, int v) {
+        return find(u) == find(v);
+    }
+
+    inline void clear() {
+        for (int i = 0; i < N; i++) p[i] = i;
+    }
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int T;
-    cin >> T;
+    int N, M, K, Q;
+    cin >> N >> M >> K >> Q;
 
-    while (T--) process();
+    vector<pi> E(M);
+    vector<vector<pi>> G(N);
+    for (int i = 0; i < M; i++) {
+        int u, v, w;
+        cin >> u >> v >> w;
+        --u, --v;
+
+        E[i] = {u, v};
+        G[u].emplace_back(v, w);
+        G[v].emplace_back(u, w);
+    }
+
+    vector<int> festival(K);
+    for (auto& el : festival) {
+        cin >> el;
+        --el;
+    }
+
+    vector<pi> queries(Q);
+    for (auto& [u, v] : queries) {
+        cin >> u >> v;
+        --u, --v;
+    }
+
+    vector<pi> D(N);
+    vector<int> dist = dijkstra(G, festival);
+    for (int i = 0; i < N; i++) D[i] = {dist[i], i};
+    sort(iterall(D), greater<>());
+    sort(iterall(E), [&dist](const pi& lhs, const pi& rhs) {
+        return min(dist[lhs.first], dist[lhs.second]) > min(dist[rhs.first], dist[rhs.second]);
+    });
+
+    DisjointSet DS(M);
+
+    vector<pi> validE;
+    vector<int> requiredDist;
+    validE.reserve(M);
+    requiredDist.reserve(M);
+    for (auto [u, v] : E) {
+        if (DS.sset(u, v)) continue;
+        DS.mer(u, v);
+        validE.emplace_back(u, v);
+        requiredDist.emplace_back(min(dist[u], dist[v]));
+    }
+    validE.shrink_to_fit();
+    requiredDist.shrink_to_fit();
+    const int VM = validE.size();
+    DS.clear();
+
+    vector<int> lo(Q), hi(Q, N - 1);
+    {
+        vector<vector<int>> qri(N);
+        for (int i = 0; i < Q; i++) {
+            auto [u, v] = queries[i];
+            qri[u].emplace_back(i);
+            qri[v].emplace_back(i);
+        }
+
+        for (int j = 0; j < N; j++) {
+            for (auto i : qri[D[j].second]) {
+                lo[i] = j;
+            }
+        }
+    }
+
+    vector<vector<int>> pbs(N);
+
+    while (true) {
+        bool termination = true;
+        int cur = 0;
+
+        for (int i = 0; i < Q; i++) {
+            if (lo[i] != hi[i]) {
+                termination = false;
+                pbs[(lo[i] + hi[i]) >> 1].emplace_back(i);
+            }
+        }
+
+        if (termination) break;
+
+        for (int j = 0; j < N; j++) {
+            while (cur < VM && requiredDist[cur] >= D[j].first) {
+                auto [u, v] = validE[cur];
+                DS.mer(u, v);
+                ++cur;
+            }
+
+            for (auto i : pbs[j]) {
+                auto [u, v] = queries[i];
+
+                if (DS.sset(u, v))
+                    hi[i] = j;
+                else
+                    lo[i] = j + 1;
+            }
+        }
+
+        for (auto& vec : pbs) vec.clear();
+        DS.clear();
+    }
+
+    for (int i = 0; i < Q; i++) {
+        cout << D[lo[i]].first << '\n';
+    }
 
     return 0;
 }
