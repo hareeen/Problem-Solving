@@ -15,28 +15,20 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-inline i64 fsqrt(i64 x) {
-    i64 s = 1, e = min(x, static_cast<i64>(numeric_limits<int>::max()));
-    while (s < e) {
-        i64 m = ((s + e) >> 1) + 1;
-        if (x >= m * m)
-            s = m;
-        else
-            e = m - 1;
-    }
-
-    return s;
+inline i64 ceil(i64 n, i64 d) {
+    if (n > 0) return n / d;
+    return (n - d + 1) / d;
 }
 
 class Node {
    public:
     i64 mx, mi, lsq, su, lz;
     int mxct;
-    bool lsqt;
+    bool lsqt, lsqv;
 
     Node() = default;
-    Node(i64 _mx, i64 _mi, int _mxct, i64 _su, i64 _lsq = 0, bool _lsqt = false, i64 _lz = 0) {
-        tie(mx, mi, mxct, su, lsq, lsqt, lz) = {_mx, _mi, _mxct, _su, _lsq, _lsqt, _lz};
+    Node(i64 _mx, i64 _mi, int _mxct, i64 _su, bool _lsqv = false, i64 _lsq = 0, bool _lsqt = false, i64 _lz = 0) {
+        tie(mx, mi, mxct, su, lsqv, lsq, lsqt, lz) = {_mx, _mi, _mxct, _su, _lsqv, _lsq, _lsqt, _lz};
     }
 };
 
@@ -77,7 +69,7 @@ class SegTree {
             int k = n << 1;
 
             for (auto i : {k, k + 1}) {
-                if (vl[n].lsq) {
+                if (vl[n].lsqv) {
                     if (vl[n].lsqt) {
                         vl[i].lsq = vl[n].lsq;
                         vl[i].lsqt = true;
@@ -104,6 +96,7 @@ class SegTree {
                         }
                     }
 
+                    vl[i].lsqv = true;
                     vl[i].lz = 0;
                 }
 
@@ -113,13 +106,12 @@ class SegTree {
             }
         }
 
-        if (vl[n].lsq) {
+        if (vl[n].lsqv) {
             if (vl[n].lsqt) {
                 vl[n].mx = vl[n].mi = vl[n].lsq;
                 vl[n].su = vl[n].lsq * len;
                 vl[n].mxct = len;
             } else {
-                // mx - mi = 1, there exists integer k that satisfies k^2 = mx
                 vl[n].mx = vl[n].lsq;
                 vl[n].mi = vl[n].lsq - 1;
                 vl[n].su = (vl[n].lsq - 1) * len + vl[n].mxct;
@@ -131,8 +123,9 @@ class SegTree {
             vl[n].mi += vl[n].lz;
             vl[n].su += vl[n].lz * len;
         }
-        
+
         vl[n].lsq = 0;
+        vl[n].lsqv = false;
         vl[n].lsqt = false;
         vl[n].lz = 0;
     }
@@ -156,16 +149,17 @@ class SegTree {
         update_sum(1, N, 1, l, r, d);
     }
 
-    void update_sqrt(int s, int e, int n, int l, int r) {
+    void update_div(int s, int e, int n, int l, int r, i64 d) {
         propagate(s, e, n);
 
         if (r < s || e < l) return;
         if (l <= s && e <= r) {
-            i64 mxs = fsqrt(vl[n].mx);
-            i64 mis = fsqrt(vl[n].mi);
+            i64 mxs = ceil(vl[n].mx, d);
+            i64 mis = ceil(vl[n].mi, d);
 
             if (mxs == mis) {
                 vl[n].lsq = mxs;
+                vl[n].lsqv = true;
                 vl[n].lsqt = true;
                 propagate(s, e, n);
                 return;
@@ -173,6 +167,7 @@ class SegTree {
 
             if (vl[n].mx - vl[n].mi == 1) {
                 vl[n].lsq = mxs;
+                vl[n].lsqv = true;
                 vl[n].lsqt = false;
                 propagate(s, e, n);
                 return;
@@ -180,25 +175,38 @@ class SegTree {
         }
 
         int m = (s + e) >> 1, k = n << 1;
-        update_sqrt(s, m, k, l, r);
-        update_sqrt(m + 1, e, k + 1, l, r);
+        update_div(s, m, k, l, r, d);
+        update_div(m + 1, e, k + 1, l, r, d);
         vl[n] = vl[k] + vl[k + 1];
     }
-    void update_sqrt(int l, int r) {
-        update_sqrt(1, N, 1, l, r);
+    void update_div(int l, int r, i64 d) {
+        update_div(1, N, 1, l, r, d);
     }
 
-    i64 query(int s, int e, int n, int l, int r) {
+    i64 query_sum(int s, int e, int n, int l, int r) {
         propagate(s, e, n);
 
         if (r < s || e < l) return 0LL;
         if (l <= s && e <= r) return vl[n].su;
 
         int m = (s + e) >> 1, k = n << 1;
-        return query(s, m, k, l, r) + query(m + 1, e, k + 1, l, r);
+        return query_sum(s, m, k, l, r) + query_sum(m + 1, e, k + 1, l, r);
     }
-    i64 query(int l, int r) {
-        return query(1, N, 1, l, r);
+    i64 query_sum(int l, int r) {
+        return query_sum(1, N, 1, l, r);
+    }
+
+    i64 query_min(int s, int e, int n, int l, int r) {
+        propagate(s, e, n);
+
+        if (r < s || e < l) return numeric_limits<i64>::max();
+        if (l <= s && e <= r) return vl[n].mi;
+
+        int m = (s + e) >> 1, k = n << 1;
+        return min(query_min(s, m, k, l, r), query_min(m + 1, e, k + 1, l, r));
+    }
+    i64 query_min(int l, int r) {
+        return query_min(1, N, 1, l, r);
     }
 };
 
@@ -207,17 +215,14 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N;
-    cin >> N;
+    int N, Q;
+    cin >> N >> Q;
 
     vector<i64> A(N + 1);
     for (int i = 1; i <= N; i++) cin >> A[i];
 
     SegTree ST(N);
     ST.init(A);
-
-    int Q;
-    cin >> Q;
 
     while (Q--) {
         int qt;
@@ -228,17 +233,26 @@ int main() {
         switch (qt) {
             case 1:
                 cin >> L >> R >> X;
+                L++, R++;
                 ST.update_sum(L, R, X);
                 break;
 
             case 2:
-                cin >> L >> R;
-                ST.update_sqrt(L, R);
+                cin >> L >> R >> X;
+                L++, R++;
+                ST.update_div(L, R, X);
                 break;
 
             case 3:
                 cin >> L >> R;
-                cout << ST.query(L, R) << "\n";
+                L++, R++;
+                cout << ST.query_min(L, R) << "\n";
+                break;
+            
+            case 4:
+                cin >> L >> R;
+                L++, R++;
+                cout << ST.query_sum(L, R) << "\n";
                 break;
 
             default:
