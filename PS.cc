@@ -15,7 +15,7 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-inline i64 ceil(i64 n, i64 d) {
+inline i64 floor(i64 n, i64 d) {
     if (n > 0) return n / d;
     return (n - d + 1) / d;
 }
@@ -154,8 +154,8 @@ class SegTree {
 
         if (r < s || e < l) return;
         if (l <= s && e <= r) {
-            i64 mxs = ceil(vl[n].mx, d);
-            i64 mis = ceil(vl[n].mi, d);
+            i64 mxs = floor(vl[n].mx, d);
+            i64 mis = floor(vl[n].mi, d);
 
             if (mxs == mis) {
                 vl[n].lsq = mxs;
@@ -208,6 +208,19 @@ class SegTree {
     i64 query_min(int l, int r) {
         return query_min(1, N, 1, l, r);
     }
+
+    i64 query_max(int s, int e, int n, int l, int r) {
+        propagate(s, e, n);
+
+        if (r < s || e < l) return numeric_limits<i64>::min();
+        if (l <= s && e <= r) return vl[n].mx;
+
+        int m = (s + e) >> 1, k = n << 1;
+        return max(query_max(s, m, k, l, r), query_max(m + 1, e, k + 1, l, r));
+    }
+    i64 query_max(int l, int r) {
+        return query_max(1, N, 1, l, r);
+    }
 };
 
 int main() {
@@ -230,31 +243,22 @@ int main() {
 
         int L, R;
         i64 X;
+        cin >> L >> R >> X;
+        L++, R++;
+
         switch (qt) {
-            case 1:
-                cin >> L >> R >> X;
-                L++, R++;
+            case 0:
                 ST.update_sum(L, R, X);
                 break;
 
-            case 2:
-                cin >> L >> R >> X;
-                L++, R++;
+            case 1:
                 ST.update_div(L, R, X);
                 break;
 
-            case 3:
-                cin >> L >> R;
-                L++, R++;
-                cout << ST.query_min(L, R) << "\n";
+            case 2:
+                cout << ST.query_max(L, R) << "\n";
                 break;
-            
-            case 4:
-                cin >> L >> R;
-                L++, R++;
-                cout << ST.query_sum(L, R) << "\n";
-                break;
-
+                
             default:
                 break;
         }
