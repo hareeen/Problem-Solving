@@ -15,211 +15,71 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-inline i64 floor(i64 n, i64 d) {
-    if (n > 0) return n / d;
-    return (n - d + 1) / d;
+template <template <class, class, class...> class C, class K, class V, class... Args>
+inline void increment(C<K, V, Args...>& container, const K& key, const V& value) {
+    auto [iter, success] = container.emplace(key, value);
+    if (!success) iter->second += value;
 }
 
-class Node {
-   public:
-    i64 mx, mi, lsq, su, lz;
-    int mxct;
-    bool lsqt, lsqv;
+template <template <class, class, class...> class C, class K, class V, class... Args>
+inline V get_with_default(const C<K, V, Args...>& container, const K& key, const V& defaultValue) {
+    auto iter = container.find(key);
+    return iter == container.end() ? defaultValue : iter->second;
+}
 
-    Node() = default;
-    Node(i64 _mx, i64 _mi, int _mxct, i64 _su, bool _lsqv = false, i64 _lsq = 0, bool _lsqt = false, i64 _lz = 0) {
-        tie(mx, mi, mxct, su, lsqv, lsq, lsqt, lz) = {_mx, _mi, _mxct, _su, _lsqv, _lsq, _lsqt, _lz};
-    }
-};
-
-Node operator+(const Node& l, const Node& r) {
-    if (l.mx == r.mx)
-        return {l.mx, min(l.mi, r.mi), l.mxct + r.mxct, l.su + r.su};
-    else if (l.mx > r.mx)
-        return {l.mx, min(l.mi, r.mi), l.mxct, l.su + r.su};
-    else
-        return {r.mx, min(l.mi, r.mi), r.mxct, l.su + r.su};
+template <template <class, class...> class C, class T, class... Args>
+inline void compress(C<T, Args...>& container) {
+    sort(iterall(container));
+    container.erase(unique(iterall(container)), container.end());
 }
 
 class SegTree {
    public:
     int N;
-    vector<Node> vl;
+    vector<int> vl, lz;
 
     SegTree() = default;
-    SegTree(int _N) {
+
+    explicit SegTree(int _N) {
         N = _N;
-        vl.resize((N << 2) + 1);
-    }
-
-    Node init(int s, int e, int n, const vector<i64>& A) {
-        if (s == e) return vl[n] = {A[s], A[s], 1, A[s]};
-
-        int m = (s + e) >> 1, k = n << 1;
-        return vl[n] = init(s, m, k, A) + init(m + 1, e, k + 1, A);
-    }
-    void init(const vector<i64>& A) {
-        init(1, N, 1, A);
+        vl.resize(4 * N + 1);
+        lz.resize(4 * N + 1);
     }
 
     void propagate(int s, int e, int n) {
-        i64 len = e - s + 1;
+        vl[n] += lz[n];
 
         if (s != e) {
             int k = n << 1;
-
-            for (auto i : {k, k + 1}) {
-                if (vl[n].lsqv) {
-                    if (vl[n].lsqt) {
-                        vl[i].lsq = vl[n].lsq;
-                        vl[i].lsqt = true;
-                    } else {
-                        i64 tmx, tmi;
-
-                        if (vl[i].lsqt)
-                            tmx = tmi = vl[i].lsq + vl[i].lz;
-                        else if (vl[i].lsq)
-                            tmx = vl[i].lsq + vl[i].lz, tmi = vl[i].lsq + vl[i].lz - 1;
-                        else
-                            tmx = vl[i].mx + vl[i].lz, tmi = vl[i].mi + vl[i].lz;
-
-                        if (tmx == tmi) {
-                            if (tmx == vl[n].mx)
-                                vl[i].lsq = vl[n].lsq;
-                            else
-                                vl[i].lsq = vl[n].lsq - 1;
-
-                            vl[i].lsqt = true;
-                        } else {
-                            vl[i].lsq = vl[n].lsq;
-                            vl[i].lsqt = false;
-                        }
-                    }
-
-                    vl[i].lsqv = true;
-                    vl[i].lz = 0;
-                }
-
-                if (vl[n].lz) {
-                    vl[i].lz += vl[n].lz;
-                }
-            }
+            lz[k] += lz[n];
+            lz[k + 1] += lz[n];
         }
 
-        if (vl[n].lsqv) {
-            if (vl[n].lsqt) {
-                vl[n].mx = vl[n].mi = vl[n].lsq;
-                vl[n].su = vl[n].lsq * len;
-                vl[n].mxct = len;
-            } else {
-                vl[n].mx = vl[n].lsq;
-                vl[n].mi = vl[n].lsq - 1;
-                vl[n].su = (vl[n].lsq - 1) * len + vl[n].mxct;
-            }
-        }
-
-        if (vl[n].lz) {
-            vl[n].mx += vl[n].lz;
-            vl[n].mi += vl[n].lz;
-            vl[n].su += vl[n].lz * len;
-        }
-
-        vl[n].lsq = 0;
-        vl[n].lsqv = false;
-        vl[n].lsqt = false;
-        vl[n].lz = 0;
+        lz[n] = 0;
     }
 
-    void update_sum(int s, int e, int n, int l, int r, i64 d) {
+    void update(int s, int e, int n, int l, int r, int d) {
         propagate(s, e, n);
 
         if (r < s || e < l) return;
         if (l <= s && e <= r) {
-            vl[n].lz = d;
+            lz[n] += d;
             propagate(s, e, n);
             return;
         }
 
-        int m = (s + e) >> 1, k = n << 1;
-        update_sum(s, m, k, l, r, d);
-        update_sum(m + 1, e, k + 1, l, r, d);
-        vl[n] = vl[k] + vl[k + 1];
+        int m = s + e >> 1, k = n << 1;
+        update(s, m, k, l, r, d);
+        update(m + 1, e, k + 1, l, r, d);
+        vl[n] = max(vl[k], vl[k + 1]);
     }
-    void update_sum(int l, int r, i64 d) {
-        update_sum(1, N, 1, l, r, d);
-    }
-
-    void update_div(int s, int e, int n, int l, int r, i64 d) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return;
-        if (l <= s && e <= r) {
-            i64 mxs = floor(vl[n].mx, d);
-            i64 mis = floor(vl[n].mi, d);
-
-            if (mxs == mis) {
-                vl[n].lsq = mxs;
-                vl[n].lsqv = true;
-                vl[n].lsqt = true;
-                propagate(s, e, n);
-                return;
-            }
-
-            if (vl[n].mx - vl[n].mi == 1) {
-                vl[n].lsq = mxs;
-                vl[n].lsqv = true;
-                vl[n].lsqt = false;
-                propagate(s, e, n);
-                return;
-            }
-        }
-
-        int m = (s + e) >> 1, k = n << 1;
-        update_div(s, m, k, l, r, d);
-        update_div(m + 1, e, k + 1, l, r, d);
-        vl[n] = vl[k] + vl[k + 1];
-    }
-    void update_div(int l, int r, i64 d) {
-        update_div(1, N, 1, l, r, d);
+    inline void update(int l, int r, int d) {
+        update(1, N, 1, l, r, d);
     }
 
-    i64 query_sum(int s, int e, int n, int l, int r) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return 0LL;
-        if (l <= s && e <= r) return vl[n].su;
-
-        int m = (s + e) >> 1, k = n << 1;
-        return query_sum(s, m, k, l, r) + query_sum(m + 1, e, k + 1, l, r);
-    }
-    i64 query_sum(int l, int r) {
-        return query_sum(1, N, 1, l, r);
-    }
-
-    i64 query_min(int s, int e, int n, int l, int r) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return numeric_limits<i64>::max();
-        if (l <= s && e <= r) return vl[n].mi;
-
-        int m = (s + e) >> 1, k = n << 1;
-        return min(query_min(s, m, k, l, r), query_min(m + 1, e, k + 1, l, r));
-    }
-    i64 query_min(int l, int r) {
-        return query_min(1, N, 1, l, r);
-    }
-
-    i64 query_max(int s, int e, int n, int l, int r) {
-        propagate(s, e, n);
-
-        if (r < s || e < l) return numeric_limits<i64>::min();
-        if (l <= s && e <= r) return vl[n].mx;
-
-        int m = (s + e) >> 1, k = n << 1;
-        return max(query_max(s, m, k, l, r), query_max(m + 1, e, k + 1, l, r));
-    }
-    i64 query_max(int l, int r) {
-        return query_max(1, N, 1, l, r);
+    inline int query() {
+        propagate(1, N, 1);
+        return vl[1];
     }
 };
 
@@ -228,41 +88,94 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, Q;
-    cin >> N >> Q;
+    int N, K;
+    cin >> N >> K;
 
-    vector<i64> A(N + 1);
-    for (int i = 1; i <= N; i++) cin >> A[i];
+    vector<ti> points(N);
+    map<pi, set<int>> mp;
+    for (auto& [x, y, c] : points) {
+        cin >> x >> y >> c;
+        x *= 2, y *= 2, --c;
+        mp[{x, y}].emplace(c);
+    }
 
-    SegTree ST(N);
-    ST.init(A);
-
-    while (Q--) {
-        int qt;
-        cin >> qt;
-
-        int L, R;
-        i64 X;
-        cin >> L >> R >> X;
-        L++, R++;
-
-        switch (qt) {
-            case 0:
-                ST.update_sum(L, R, X);
-                break;
-
-            case 1:
-                ST.update_div(L, R, X);
-                break;
-
-            case 2:
-                cout << ST.query_max(L, R) << "\n";
-                break;
-                
-            default:
-                break;
+    for (auto& [_, S] : mp) {
+        if (S.size() >= K) {
+            cout << 0 << endl;
+            return 0;
         }
     }
+
+    int lo = 1, hi = 500010;
+    using qi = tuple<int, int, int, int, int>;
+    while (lo < hi) {
+        const int L = (lo + hi) / 2;
+
+        vector<qi> queries;
+        queries.reserve(2 * N);
+
+        vector<int> xzip, yzip;
+        xzip.reserve(2 * N), yzip.reserve(2 * N);
+
+        for (auto [x, y, c] : points) {
+            queries.emplace_back(x - L, y - L, y + L, c, 1);
+            queries.emplace_back(x + L + 1, y - L, y + L, c, -1);
+
+            xzip.emplace_back(x - L);
+            xzip.emplace_back(x + L + 1);
+            yzip.emplace_back(y - L);
+            yzip.emplace_back(y + L);
+        }
+        sort(iterall(queries));
+        compress(xzip);
+        compress(yzip);
+
+        const int X = xzip.size(), Y = yzip.size();
+        SegTree ST(Y);
+        vector<multiset<pi>> appended(K);
+
+        bool flag = false;
+        auto qit = queries.begin();
+        for (auto x : xzip) {
+            while (qit != queries.end() && get<0>(*qit) == x) {
+                auto [_, ys, ye, c, d] = *qit;
+
+                ys = lower_bound(iterall(yzip), ys) - yzip.begin() + 1;
+                ye = lower_bound(iterall(yzip), ye) - yzip.begin() + 1;
+
+                int qs = ys, qe = ye;
+                auto it = appended[c].lower_bound({ys, ye});
+                if (d == 1) {
+                    if (!appended[c].empty() && it != appended[c].begin()) qs = max(qs, prev(it)->second + 1);
+                    if (it != appended[c].end()) qe = min(qe, it->first - 1);
+
+                    appended[c].emplace_hint(it, ys, ye);
+                } else {
+                    if (it != appended[c].begin()) qs = max(qs, prev(it)->second + 1);
+                    if (next(it) != appended[c].end()) qe = min(qe, next(it)->first - 1);
+
+                    appended[c].erase(it);
+                }
+
+                if (qs <= qe) ST.update(qs, qe, d);
+                ++qit;
+            }
+
+            // cout << L << " " << ST.query() << endl;
+            if (ST.query() >= K) {
+                flag = true;
+                break;
+            }
+        }
+
+        // cout << endl;
+        if (flag)
+            hi = L;
+        else
+            lo = L + 1;
+    }
+
+    cout << lo << endl;
 
     return 0;
 }
