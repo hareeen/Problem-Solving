@@ -53,51 +53,63 @@ class Node {
     }
 };
 
-namespace LiChao {
-    Node* init(i64 s, i64 e) { return new Node(s, e); }
+class LiChaoSeg {
+   public:
+    int N;
+    vector<i64> cor;
+    vector<Line> vl;
 
-    void update(Node* h, const Line d, i64 l, i64 r) {
-        i64 s = h->s, e = h->e;
-        i64 m = (s + e) / 2;
+    LiChaoSeg() = default;
+    LiChaoSeg(const vector<i64>& _cor) {
+        cor = _cor;
+        N = cor.size();
+        vl.resize(4*N);
+    }
+
+    void update(int s, int e, int n, int l, int r, Line v) {
+        int m = s + e >> 1, k = n << 1;
+        i64 cs = cor[s], ce = cor[e], cm = cor[m];
 
         if (r < s || e < l) return;
         if (l <= s && e <= r) {
-            auto lo = h->v, hi = d;
-            if (lo.get(s) > hi.get(s)) swap(lo, hi);
+            auto lo = vl[n], hi = v;
+            if (lo.get(cs) > hi.get(cs)) swap(lo, hi);
 
-            if (lo.get(e) <= hi.get(e)) {
-                h->v = hi;
+            if (lo.get(ce) <= hi.get(ce)) {
+                vl[n] = hi;
                 return;
             }
 
-            if (lo.get(m) > hi.get(m)) {
-                h->v = lo;
-                if (!h->l) h->l = new Node(s, m);
-                update(h->l, hi, l, r);
+            if (lo.get(cm) > hi.get(cm)) {
+                vl[n] = lo;
+                update(s, m, k, l, r, hi);
             } else {
-                h->v = hi;
-                if (!h->r) h->r = new Node(m + 1, e);
-                update(h->r, lo, l, r);
+                vl[n] = hi;
+                update(m + 1, e, k + 1, l, r, lo);
             }
 
             return;
         }
 
-        if (!h->l) h->l = new Node(s, m);
-        if (!h->r) h->r = new Node(m + 1, e);
-        update(h->l, d, l, r);
-        update(h->r, d, l, r);
+        update(s, m, k, l, r, v);
+        update(m + 1, e, k + 1, l, r, v);
+    }
+    inline void update(int l, int r, Line v) {
+        update(0, N - 1, 1, l, r, v);
     }
 
-    i64 query(Node* h, const i64 x) {
-        if (!h) return ninf;
+    i64 query(int s, int e, int n, int t) {
+        i64 m = s + e >> 1, k = n << 1;
 
-        i64 s = h->s, e = h->e;
-        i64 m = (s + e) / 2;
-
-        return max(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
+        if (s == e)
+            return vl[n].get(cor[t]);
+        else
+            return max(vl[n].get(cor[t]), t <= m ? query(s, m, k, t) : query(m + 1, e, k + 1, t));
     }
-};  // namespace LiChao
+    inline i64 query(int t) {
+        return query(0, N - 1, 1, t);
+    }
+};
 
 int main() {
     ios_base::sync_with_stdio(false);
@@ -107,34 +119,95 @@ int main() {
     int N;
     cin >> N;
 
-    vector<i64> arr(N);
-    for (auto& el : arr) cin >> el;
+    vector<pli> pts(N);
+    for (auto& [x, y] : pts) cin >> x >> y;
 
-    stack<pli> stk;
-    Node* root = LiChao::init(0, N - 1);
+    N = N / 2 - 1;
+    vector<tli> arr;
+    for (int i = 1; i + 1 < static_cast<int>(pts.size()); i += 2) {
+        const auto& [l, h] = pts[i];
+        const auto& [r, _] = pts[i + 1];
+        arr.emplace_back(l, r, h);
+    }
 
-    for (i64 i = 0; i < N; i++) {
-        int tpi = i;
-        while (!stk.empty() && stk.top().first > arr[i]) {
-            auto [h, j] = stk.top();
-            tpi = j;
-            stk.pop();
-            LiChao::update(root, Line(h, h * (1 - j)), j, i - 1);
+    if (N == 1) {
+        auto [l, r, h] = arr[0];
+        cout << (r - l) * h << endl;
+        return 0;
+    }
+
+    vector<i64> res(N - 1);
+    const i64 R = get<1>(arr.back());
+
+    {
+        vector<i64> cor(1, 0);
+        for (const auto& [l, r, h] : arr) cor.emplace_back(r);
+        stack<pli> stk;
+        LiChaoSeg seg(cor);
+
+        for (int i = 0; i < N; i++) {
+            const auto& [l, r, h] = arr[i];
+            i64 ml = i;
+
+            while (!stk.empty() && stk.top().first > h) {
+                auto [lh, ll] = stk.top();
+                ml = ll;
+                stk.pop();
+                seg.update(ll, i, Line(lh, -lh * cor[ll]));
+            }
+            stk.emplace(h, ml);
         }
-        stk.emplace(arr[i], tpi);
+
+        while (!stk.empty()) {
+            auto [h, l] = stk.top();
+            stk.pop();
+            seg.update(l, N, Line(h, -h * cor[l]));
+        }
+
+        for (int i = 0; i < N - 1; i++) {
+            res[i] += seg.query(i + 1);
+        }
     }
 
-    while (!stk.empty()) {
-        auto [h, j] = stk.top();
-        stk.pop();
-        LiChao::update(root, Line(h, h * (1 - j)), j, N - 1);
+    reverse(iterall(arr));
+    reverse(iterall(res));
+    for (auto& [l, r, h] : arr) {
+        swap(l, r);
+        l = R - l;
+        r = R - r;
     }
 
+    {
+        vector<i64> cor(1, 0);
+        for (const auto& [l, r, h] : arr) cor.emplace_back(r);
+        stack<pli> stk;
+        LiChaoSeg seg(cor);
 
-    vector<i64> res(N);
-    for (int i = 0; i < N; i++) res[i] = LiChao::query(root, i);
-    for (int i = 1; i < N; i++) res[i] = max(res[i - 1], res[i]);
-    copy(iterall(res), ostream_iterator<i64>(cout, "\n"));
+        for (int i = 0; i < N; i++) {
+            const auto& [l, r, h] = arr[i];
+            i64 ml = i;
+
+            while (!stk.empty() && stk.top().first > h) {
+                auto [lh, ll] = stk.top();
+                ml = ll;
+                stk.pop();
+                seg.update(ll, i, Line(lh, -lh * cor[ll]));
+            }
+            stk.emplace(h, ml);
+        }
+
+        while (!stk.empty()) {
+            auto [h, l] = stk.top();
+            stk.pop();
+            seg.update(l, N, Line(h, -h * cor[l]));
+        }
+
+        for (int i = 0; i < N - 1; i++) {
+            res[i] += seg.query(i + 1);
+        }
+    }
+
+    cout << *max_element(iterall(res)) << endl;
 
     return 0;
 }
