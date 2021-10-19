@@ -15,167 +15,126 @@ using tli = tuple<i64, i64, i64>;
 #define iterall(cont) cont.begin(), cont.end()
 #define prec(n) setprecision(n) << fixed
 
-template <template <class, class, class...> class C, class K, class V, class... Args>
-inline void increment(C<K, V, Args...>& container, const K& key, const V& value) {
-    auto [iter, success] = container.emplace(key, value);
-    if (!success) iter->second += value;
-}
+const i64 ninf = numeric_limits<i64>::min() / 2;
 
-template <template <class, class, class...> class C, class K, class V, class... Args>
-inline V get_with_default(const C<K, V, Args...>& container, const K& key, const V& defaultValue) {
-    auto iter = container.find(key);
-    return iter == container.end() ? defaultValue : iter->second;
-}
-
-template <template <class, class...> class C, class T, class... Args>
-inline void compress(C<T, Args...>& container) {
-    sort(iterall(container));
-    container.erase(unique(iterall(container)), container.end());
-}
-
-class SegTree {
+class Line {
    public:
-    int N;
-    vector<int> vl, lz;
+    i64 a, b;
 
-    SegTree() = default;
+    Line() { a = 0, b = ninf; }
 
-    explicit SegTree(int _N) {
-        N = _N;
-        vl.resize(4 * N + 1);
-        lz.resize(4 * N + 1);
+    Line(i64 _a, i64 _b) { a = _a, b = _b; }
+
+    inline i64 get(i64 x) { return a * x + b; }
+};
+
+class Node {
+   public:
+    i64 s, e;
+    Line v;
+    Node *l, *r;
+
+    Node() {
+        s = e = 0;
+        v = Line();
+        l = r = nullptr;
     }
 
-    void propagate(int s, int e, int n) {
-        vl[n] += lz[n];
-
-        if (s != e) {
-            int k = n << 1;
-            lz[k] += lz[n];
-            lz[k + 1] += lz[n];
-        }
-
-        lz[n] = 0;
+    Node(i64 _s, i64 _e) {
+        s = _s, e = _e;
+        v = Line();
+        l = r = nullptr;
     }
 
-    void update(int s, int e, int n, int l, int r, int d) {
-        propagate(s, e, n);
+    Node(i64 _s, i64 _e, i64 _a, i64 _b) {
+        s = _s, e = _e;
+        v = Line(_a, _b);
+        l = r = nullptr;
+    }
+};
+
+namespace LiChao {
+    Node* init(i64 s, i64 e) { return new Node(s, e); }
+
+    void update(Node* h, const Line d, i64 l, i64 r) {
+        i64 s = h->s, e = h->e;
+        i64 m = (s + e) / 2;
 
         if (r < s || e < l) return;
         if (l <= s && e <= r) {
-            lz[n] += d;
-            propagate(s, e, n);
+            auto lo = h->v, hi = d;
+            if (lo.get(s) > hi.get(s)) swap(lo, hi);
+
+            if (lo.get(e) <= hi.get(e)) {
+                h->v = hi;
+                return;
+            }
+
+            if (lo.get(m) > hi.get(m)) {
+                h->v = lo;
+                if (!h->l) h->l = new Node(s, m);
+                update(h->l, hi, l, r);
+            } else {
+                h->v = hi;
+                if (!h->r) h->r = new Node(m + 1, e);
+                update(h->r, lo, l, r);
+            }
+
             return;
         }
 
-        int m = s + e >> 1, k = n << 1;
-        update(s, m, k, l, r, d);
-        update(m + 1, e, k + 1, l, r, d);
-        vl[n] = max(vl[k], vl[k + 1]);
-    }
-    inline void update(int l, int r, int d) {
-        update(1, N, 1, l, r, d);
+        if (!h->l) h->l = new Node(s, m);
+        if (!h->r) h->r = new Node(m + 1, e);
+        update(h->l, d, l, r);
+        update(h->r, d, l, r);
     }
 
-    inline int query() {
-        propagate(1, N, 1);
-        return vl[1];
+    i64 query(Node* h, const i64 x) {
+        if (!h) return ninf;
+
+        i64 s = h->s, e = h->e;
+        i64 m = (s + e) / 2;
+
+        return max(h->v.get(x), x <= m ? query(h->l, x) : query(h->r, x));
     }
-};
+};  // namespace LiChao
 
 int main() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
     cout.tie(nullptr);
 
-    int N, K;
-    cin >> N >> K;
+    int N;
+    cin >> N;
 
-    vector<ti> points(N);
-    map<pi, set<int>> mp;
-    for (auto& [x, y, c] : points) {
-        cin >> x >> y >> c;
-        x *= 2, y *= 2, --c;
-        mp[{x, y}].emplace(c);
+    vector<i64> arr(N);
+    for (auto& el : arr) cin >> el;
+
+    stack<pli> stk;
+    Node* root = LiChao::init(0, N - 1);
+
+    for (i64 i = 0; i < N; i++) {
+        int tpi = i;
+        while (!stk.empty() && stk.top().first > arr[i]) {
+            auto [h, j] = stk.top();
+            tpi = j;
+            stk.pop();
+            LiChao::update(root, Line(h, h * (1 - j)), j, i - 1);
+        }
+        stk.emplace(arr[i], tpi);
     }
 
-    for (auto& [_, S] : mp) {
-        if (S.size() >= K) {
-            cout << 0 << endl;
-            return 0;
-        }
+    while (!stk.empty()) {
+        auto [h, j] = stk.top();
+        stk.pop();
+        LiChao::update(root, Line(h, h * (1 - j)), j, N - 1);
     }
 
-    int lo = 1, hi = 500010;
-    using qi = tuple<int, int, int, int, int>;
-    while (lo < hi) {
-        const int L = (lo + hi) / 2;
 
-        vector<qi> queries;
-        queries.reserve(2 * N);
-
-        vector<int> xzip, yzip;
-        xzip.reserve(2 * N), yzip.reserve(2 * N);
-
-        for (auto [x, y, c] : points) {
-            queries.emplace_back(x - L, y - L, y + L, c, 1);
-            queries.emplace_back(x + L + 1, y - L, y + L, c, -1);
-
-            xzip.emplace_back(x - L);
-            xzip.emplace_back(x + L + 1);
-            yzip.emplace_back(y - L);
-            yzip.emplace_back(y + L);
-        }
-        sort(iterall(queries));
-        compress(xzip);
-        compress(yzip);
-
-        const int X = xzip.size(), Y = yzip.size();
-        SegTree ST(Y);
-        vector<multiset<pi>> appended(K);
-
-        bool flag = false;
-        auto qit = queries.begin();
-        for (auto x : xzip) {
-            while (qit != queries.end() && get<0>(*qit) == x) {
-                auto [_, ys, ye, c, d] = *qit;
-
-                ys = lower_bound(iterall(yzip), ys) - yzip.begin() + 1;
-                ye = lower_bound(iterall(yzip), ye) - yzip.begin() + 1;
-
-                int qs = ys, qe = ye;
-                auto it = appended[c].lower_bound({ys, ye});
-                if (d == 1) {
-                    if (!appended[c].empty() && it != appended[c].begin()) qs = max(qs, prev(it)->second + 1);
-                    if (it != appended[c].end()) qe = min(qe, it->first - 1);
-
-                    appended[c].emplace_hint(it, ys, ye);
-                } else {
-                    if (it != appended[c].begin()) qs = max(qs, prev(it)->second + 1);
-                    if (next(it) != appended[c].end()) qe = min(qe, next(it)->first - 1);
-
-                    appended[c].erase(it);
-                }
-
-                if (qs <= qe) ST.update(qs, qe, d);
-                ++qit;
-            }
-
-            // cout << L << " " << ST.query() << endl;
-            if (ST.query() >= K) {
-                flag = true;
-                break;
-            }
-        }
-
-        // cout << endl;
-        if (flag)
-            hi = L;
-        else
-            lo = L + 1;
-    }
-
-    cout << lo << endl;
+    vector<i64> res(N);
+    for (int i = 0; i < N; i++) res[i] = LiChao::query(root, i);
+    for (int i = 1; i < N; i++) res[i] = max(res[i - 1], res[i]);
+    copy(iterall(res), ostream_iterator<i64>(cout, "\n"));
 
     return 0;
 }
