@@ -43,3 +43,5 @@ while Fk % M == 0 and Fnk % M == 0:
 A = (Fnk * ext_euc(Fk, mod)[1]) % M
 B = (Fnkm1 - A * Fkm1) % M
 print(A, B)
+
+
