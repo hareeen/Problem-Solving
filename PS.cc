@@ -5,14 +5,12 @@
 
 using namespace std;
 
-using i64 = long long;
-using d64 = long double;
+using li = long long;
+using ld = long double;
 using pi = pair<int, int>;
-using pli = pair<i64, i64>;
-using ti = tuple<int, int, int>;
-using tli = tuple<i64, i64, i64>;
+using pli = pair<li, li>;
 
-#define iterall(cont) cont.begin(), cont.end()
+#define all(c) c.begin(), c.end()
 #define prec(n) setprecision(n) << fixed
 
 int main() {
