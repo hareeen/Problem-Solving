@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+IndentWidth: 4
+NamespaceIndentation: All
+MaxEmptyLinesToKeep: 2
+ColumnLimit: 0
